@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Pulverizacion {
+  id         String     @id @unique @default(uuid())
+  fecha      DateTime
+  detalle_id String
+  detalle    Detalle    @relation(fields: [detalle_id], references: [id])
+  productos  Producto[] @relation("PulverizacionProductos")
+}
+
+model Detalle {
+  id             String          @id @unique @default(uuid())
+  campo_id       String
+  campo          Campo           @relation(fields: [campo_id], references: [id])
+  lotes          String[]
+  hectareas      Float
+  cultivo_id     String
+  cultivo        Cultivo         @relation(fields: [cultivo_id], references: [id])
+  tratamiento_id String
+  tratamiento    TipoTratamiento @relation(fields: [tratamiento_id], references: [id])
+  Pulverizacion  Pulverizacion[]
+}
+
+enum UNIDAD {
+  LITROS
+  GRAMOS
+}
+
+model Producto {
+  id              String            @id @unique @default(uuid())
+  nombre          String
+  unidad          UNIDAD
+  cantidad        Float
+  pulverizaciones Pulverizacion[]   @relation("PulverizacionProductos")
+  Aplicacion      Aplicacion[]
+  ConsumoProducto ConsumoProducto[]
+}
+
+model Aplicacion {
+  id          String   @id @unique @default(uuid())
+  producto_id String
+  producto    Producto @relation(fields: [producto_id], references: [id])
+  dosis       Float
+}
+
+model ConsumoProducto {
+  id               String   @id @unique @default(uuid())
+  producto_id      String
+  producto         Producto @relation(fields: [producto_id], references: [id])
+  valor_teorico    Float
+  valor_real       Float?
+  valor_devolucion Float?
+}
+
+model Campo {
+  id        String    @id @unique @default(uuid())
+  nombre    String
+  hectareas Float
+  Detalle   Detalle[]
+}
+
+model Cultivo {
+  id      String    @id @unique @default(uuid())
+  nombre  String
+  Detalle Detalle[]
+}
+
+model TipoTratamiento {
+  id      String    @id @unique @default(uuid())
+  nombre  String
+  Detalle Detalle[]
+}
