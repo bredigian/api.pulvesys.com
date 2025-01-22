@@ -17,22 +17,24 @@ model Pulverizacion {
   id              String            @id @unique @default(uuid())
   fecha           DateTime
   detalle_id      String
-  detalle         Detalle           @relation(fields: [detalle_id], references: [id])
+  detalle         Detalle           @relation(fields: [detalle_id], references: [id], onDelete: Cascade)
   productos       Producto[]        @relation("PulverizacionProductos")
   Aplicacion      Aplicacion[]
   ConsumoProducto ConsumoProducto[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 model Detalle {
   id             String          @id @unique @default(uuid())
-  campo_id       String
-  campo          Campo           @relation(fields: [campo_id], references: [id])
+  campo_id       String          @default("-")
+  campo          Campo           @relation(fields: [campo_id], references: [id], onDelete: SetDefault)
   lotes          String[]
   hectareas      Float
-  cultivo_id     String
-  cultivo        Cultivo         @relation(fields: [cultivo_id], references: [id])
-  tratamiento_id String
-  tratamiento    TipoTratamiento @relation(fields: [tratamiento_id], references: [id])
+  cultivo_id     String          @default("-")
+  cultivo        Cultivo         @relation(fields: [cultivo_id], references: [id], onDelete: SetDefault)
+  tratamiento_id String          @default("-")
+  tratamiento    TipoTratamiento @relation(fields: [tratamiento_id], references: [id], onDelete: SetDefault)
   Pulverizacion  Pulverizacion[]
 }
 
@@ -54,18 +56,18 @@ model Producto {
 model Aplicacion {
   id               String        @id @unique @default(uuid())
   pulverizacion_id String
-  pulveriacion     Pulverizacion @relation(fields: [pulverizacion_id], references: [id])
-  producto_id      String
-  producto         Producto      @relation(fields: [producto_id], references: [id])
+  pulveriacion     Pulverizacion @relation(fields: [pulverizacion_id], references: [id], onDelete: Cascade)
+  producto_id      String        @default("-")
+  producto         Producto      @relation(fields: [producto_id], references: [id], onDelete: SetDefault)
   dosis            Float
 }
 
 model ConsumoProducto {
   id               String        @id @unique @default(uuid())
   pulverizacion_id String
-  Pulverizacion    Pulverizacion @relation(fields: [pulverizacion_id], references: [id])
-  producto_id      String
-  producto         Producto      @relation(fields: [producto_id], references: [id])
+  Pulverizacion    Pulverizacion @relation(fields: [pulverizacion_id], references: [id], onDelete: Cascade)
+  producto_id      String        @default("-")
+  producto         Producto      @relation(fields: [producto_id], references: [id], onDelete: SetDefault)
   valor_teorico    Float
   valor_real       Float?
   valor_devolucion Float?
