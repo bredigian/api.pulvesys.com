@@ -1,10 +1,4 @@
-import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
 import { UNIDAD } from '@prisma/client';
 import { UUID } from 'crypto';

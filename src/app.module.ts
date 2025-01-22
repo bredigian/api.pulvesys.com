@@ -1,10 +1,14 @@
+import { AplicacionesModule } from './aplicaciones/aplicaciones.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CamposModule } from './campos/campos.module';
 import { ConfigModule } from '@nestjs/config';
+import { ConsumoProductoModule } from './consumo-producto/consumo-producto.module';
+import { CultivosModule } from './cultivos/cultivos.module';
+import { DetallesModule } from './detalles/detalles.module';
 import { Module } from '@nestjs/common';
 import { ProductosModule } from './productos/productos.module';
-import { CultivosModule } from './cultivos/cultivos.module';
+import { PulverizacionesModule } from './pulverizaciones/pulverizaciones.module';
 import { TratamientosModule } from './tratamientos/tratamientos.module';
 
 @Module({
@@ -14,6 +18,10 @@ import { TratamientosModule } from './tratamientos/tratamientos.module';
     CamposModule,
     CultivosModule,
     TratamientosModule,
+    DetallesModule,
+    PulverizacionesModule,
+    AplicacionesModule,
+    ConsumoProductoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
