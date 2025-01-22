@@ -1,6 +1,7 @@
 import { Cultivo } from '@prisma/client';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UUID } from 'crypto';
 
 @Injectable()
 export class CultivosService {
@@ -12,5 +13,9 @@ export class CultivosService {
 
   async addCultivo(data: Cultivo) {
     return await this.prisma.cultivo.create({ data });
+  }
+
+  async findById(id: UUID) {
+    return await this.prisma.cultivo.findUnique({ where: { id } });
   }
 }
