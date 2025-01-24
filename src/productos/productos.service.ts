@@ -18,4 +18,12 @@ export class ProductosService {
   async findById(id: UUID) {
     return await this.prisma.producto.findUnique({ where: { id } });
   }
+
+  async editProducto(data: Producto) {
+    return await this.prisma.producto.update({ where: { id: data.id }, data });
+  }
+
+  async deleteById(id: UUID) {
+    return await this.prisma.producto.delete({ where: { id } });
+  }
 }
