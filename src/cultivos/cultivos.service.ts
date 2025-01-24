@@ -18,4 +18,12 @@ export class CultivosService {
   async findById(id: UUID) {
     return await this.prisma.cultivo.findUnique({ where: { id } });
   }
+
+  async editCultivo(data: Cultivo) {
+    return await this.prisma.cultivo.update({ where: { id: data.id }, data });
+  }
+
+  async deleteById(id: UUID) {
+    return await this.prisma.cultivo.delete({ where: { id } });
+  }
 }
