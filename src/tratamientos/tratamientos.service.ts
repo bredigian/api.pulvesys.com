@@ -18,4 +18,15 @@ export class TratamientosService {
   async findById(id: UUID) {
     return await this.prisma.tipoTratamiento.findUnique({ where: { id } });
   }
+
+  async editTratamiento(data: TipoTratamiento) {
+    return await this.prisma.tipoTratamiento.update({
+      where: { id: data.id },
+      data,
+    });
+  }
+
+  async deleteById(id: UUID) {
+    return await this.prisma.tipoTratamiento.delete({ where: { id } });
+  }
 }
