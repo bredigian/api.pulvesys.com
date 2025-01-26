@@ -35,5 +35,5 @@ export class CampoDTO {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => LoteDTO)
-  lotes: LoteDTO[];
+  Lote: LoteDTO[];
 }

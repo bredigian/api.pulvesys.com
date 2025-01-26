@@ -91,11 +91,11 @@ model Lote {
 }
 
 model Coordinada {
-  id       String @id @unique @default(uuid())
-  latitud  Float
-  longitud Float
-  lote_id  String
-  lote     Lote   @relation(fields: [lote_id], references: [id])
+  id      String @id @unique @default(uuid())
+  lat     Float
+  lng     Float
+  lote_id String
+  lote    Lote   @relation(fields: [lote_id], references: [id])
 }
 
 model Cultivo {

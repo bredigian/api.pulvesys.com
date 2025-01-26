@@ -8,7 +8,9 @@ export class CamposService {
   constructor(private prisma: PrismaService) {}
 
   async getAll() {
-    return await this.prisma.campo.findMany();
+    return await this.prisma.campo.findMany({
+      include: { Lote: { include: { Coordinada: true } } },
+    });
   }
 
   async addCampo(data: Campo) {

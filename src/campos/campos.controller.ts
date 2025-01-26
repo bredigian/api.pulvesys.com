@@ -50,8 +50,8 @@ export class CamposController {
         hectareas: data.hectareas,
       });
 
-      const { lotes } = data;
-      for (const lote of lotes) {
+      const { Lote } = data;
+      for (const lote of Lote) {
         const loteCreated = await this.lotesService.addLote({
           id: undefined,
           nombre: lote.nombre,
@@ -62,8 +62,8 @@ export class CamposController {
           await this.coordinadaService.addCoordinada({
             id: undefined,
             lote_id: loteCreated.id,
-            latitud: zona.lat,
-            longitud: zona.lng,
+            lat: zona.lat,
+            lng: zona.lng,
           });
         }
       }
