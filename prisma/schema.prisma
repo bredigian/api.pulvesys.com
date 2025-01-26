@@ -78,6 +78,24 @@ model Campo {
   nombre    String
   hectareas Float
   Detalle   Detalle[]
+  Lote      Lote[]
+}
+
+model Lote {
+  id         String       @id @unique @default(uuid())
+  nombre     String
+  color      String
+  campo_id   String
+  campo      Campo        @relation(fields: [campo_id], references: [id])
+  Coordinada Coordinada[]
+}
+
+model Coordinada {
+  id       String @id @unique @default(uuid())
+  latitud  Float
+  longitud Float
+  lote_id  String
+  lote     Lote   @relation(fields: [lote_id], references: [id])
 }
 
 model Cultivo {

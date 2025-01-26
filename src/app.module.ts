@@ -10,6 +10,8 @@ import { Module } from '@nestjs/common';
 import { ProductosModule } from './productos/productos.module';
 import { PulverizacionesModule } from './pulverizaciones/pulverizaciones.module';
 import { TratamientosModule } from './tratamientos/tratamientos.module';
+import { LotesModule } from './lotes/lotes.module';
+import { CoordinadasModule } from './coordinadas/coordinadas.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { TratamientosModule } from './tratamientos/tratamientos.module';
     PulverizacionesModule,
     AplicacionesModule,
     ConsumoProductoModule,
+    LotesModule,
+    CoordinadasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

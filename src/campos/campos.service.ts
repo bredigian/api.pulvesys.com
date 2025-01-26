@@ -18,4 +18,12 @@ export class CamposService {
   async findById(id: UUID) {
     return await this.prisma.campo.findUnique({ where: { id } });
   }
+
+  async editCampo(data: Campo) {
+    return await this.prisma.campo.update({ where: { id: data.id }, data });
+  }
+
+  async deleteById(id: UUID) {
+    return await this.prisma.campo.delete({ where: { id } });
+  }
 }
