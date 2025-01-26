@@ -86,7 +86,7 @@ model Lote {
   nombre     String
   color      String
   campo_id   String
-  campo      Campo        @relation(fields: [campo_id], references: [id])
+  campo      Campo        @relation(fields: [campo_id], references: [id], onDelete: Cascade)
   Coordinada Coordinada[]
 }
 
@@ -95,7 +95,7 @@ model Coordinada {
   lat     Float
   lng     Float
   lote_id String
-  lote    Lote   @relation(fields: [lote_id], references: [id])
+  lote    Lote   @relation(fields: [lote_id], references: [id], onDelete: Cascade)
 }
 
 model Cultivo {
