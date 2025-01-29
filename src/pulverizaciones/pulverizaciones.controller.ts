@@ -1,9 +1,13 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Get,
   InternalServerErrorException,
   NotFoundException,
+  Patch,
   Post,
+  Query,
   UsePipes,
   ValidationPipe,
   Version,
@@ -21,6 +25,8 @@ import { CamposService } from 'src/campos/campos.service';
 import { CultivosService } from 'src/cultivos/cultivos.service';
 import { TratamientosService } from 'src/tratamientos/tratamientos.service';
 import { ProductosService } from 'src/productos/productos.service';
+import { AplicacionConConsumoDTO } from 'src/aplicaciones/aplicaciones.dto';
+import { Aplicacion, ConsumoProducto } from '@prisma/client';
 
 @Controller('pulverizaciones')
 export class PulverizacionesController {
@@ -34,6 +40,43 @@ export class PulverizacionesController {
     private readonly tratamientosService: TratamientosService,
     private readonly productosService: ProductosService,
   ) {}
+
+  @Get()
+  @Version('1')
+  async getAll() {
+    try {
+      return await this.service.getPulverizaciones();
+    } catch (error) {
+      if (error) throw error;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
+
+  @Get('detalle')
+  @Version('1')
+  async getById(@Query('id') id: UUID) {
+    try {
+      if (!id)
+        throw new BadRequestException(
+          'El ID es requerido para continuar con la solicitud.',
+        );
+
+      const detalle = await this.service.getById(id);
+      if (!detalle)
+        throw new NotFoundException('La pulverización no fue encontrada.');
+
+      return detalle;
+    } catch (error) {
+      if (error) throw error;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
 
   @Post()
   @Version('1')
@@ -90,6 +133,47 @@ export class PulverizacionesController {
       }
 
       return pulverizacion;
+    } catch (error) {
+      if (error instanceof Error) throw error;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
+
+  @Patch('aplicacion')
+  @Version('1')
+  @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
+  async editAplicacionConsumo(@Body() data: AplicacionConConsumoDTO) {
+    try {
+      const APLICACION_DATA: Aplicacion = {
+        pulverizacion_id: data.pulverizacion_id,
+        producto_id: data.producto_id,
+        id: data.id,
+        dosis: data.dosis,
+      };
+      const aplicacionUpdated =
+        await this.aplicacionesService.editAplicacion(APLICACION_DATA);
+
+      const pulverizacion = await this.service.getById(data.pulverizacion_id);
+
+      const VALOR_TEORICO =
+        aplicacionUpdated.dosis * pulverizacion.detalle.hectareas;
+
+      const CONSUMO_DATA: ConsumoProducto = {
+        id: data.consumo_id,
+        pulverizacion_id: data.pulverizacion_id,
+        producto_id: data.producto_id,
+        valor_teorico: VALOR_TEORICO,
+        valor_real: data.valor_real ?? null,
+        valor_devolucion: !data.valor_real
+          ? null
+          : data.valor_real - VALOR_TEORICO,
+      };
+      await this.consumoProductosService.updateValores(CONSUMO_DATA);
+
+      return await this.service.getById(data.pulverizacion_id);
     } catch (error) {
       if (error instanceof Error) throw error;
 
