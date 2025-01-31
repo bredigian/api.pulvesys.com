@@ -51,7 +51,6 @@ export class CamposController {
       const campo = await this.service.addCampo({
         id: undefined,
         nombre: data.nombre,
-        hectareas: data.hectareas,
       });
 
       const { Lote } = data;
@@ -59,6 +58,7 @@ export class CamposController {
         const loteCreated = await this.lotesService.addLote({
           id: undefined,
           nombre: lote.nombre,
+          hectareas: lote.hectareas,
           color: lote.color,
           campo_id: campo.id,
         });

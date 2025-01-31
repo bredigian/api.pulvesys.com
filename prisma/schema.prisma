@@ -30,7 +30,6 @@ model Detalle {
   campo_id       String          @default("-")
   campo          Campo           @relation(fields: [campo_id], references: [id], onDelete: SetDefault)
   lotes          String[]
-  hectareas      Float
   cultivo_id     String          @default("-")
   cultivo        Cultivo         @relation(fields: [cultivo_id], references: [id], onDelete: SetDefault)
   tratamiento_id String          @default("-")
@@ -74,15 +73,15 @@ model ConsumoProducto {
 }
 
 model Campo {
-  id        String    @id @unique @default(uuid())
-  nombre    String
-  hectareas Float
-  Detalle   Detalle[]
-  Lote      Lote[]
+  id      String    @id @unique @default(uuid())
+  nombre  String
+  Detalle Detalle[]
+  Lote    Lote[]
 }
 
 model Lote {
   id         String       @id @unique @default(uuid())
+  hectareas  Float
   nombre     String
   color      String
   campo_id   String

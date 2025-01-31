@@ -17,9 +17,6 @@ export class CampoStrictDTO {
 
   @IsString()
   nombre: string;
-
-  @IsNumber()
-  hectareas: number;
 }
 
 export class CampoDTO {
@@ -28,9 +25,6 @@ export class CampoDTO {
 
   @IsString()
   nombre: string;
-
-  @IsNumber()
-  hectareas: number;
 
   @IsArray()
   @ValidateNested({ each: true })

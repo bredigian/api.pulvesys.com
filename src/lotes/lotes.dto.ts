@@ -7,6 +7,9 @@ export class LoteDTO {
   @IsString()
   nombre: string;
 
+  @IsNumber()
+  hectareas: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CoordinadaDTO)

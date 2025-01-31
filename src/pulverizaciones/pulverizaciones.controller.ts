@@ -137,10 +137,14 @@ export class PulverizacionesController {
           pulverizacion_id: pulverizacion.id,
         });
 
+        const selectedHectareas = campo.Lote.filter((lote) =>
+          detalle.lotes.includes(lote.nombre),
+        ).reduce((acc, lote) => acc + lote.hectareas, 0);
+
         const consumo_payload: ConsumoProductoDTO = {
           producto_id: aplicacion.producto_id,
           pulverizacion_id: pulverizacion.id as UUID,
-          valor_teorico: aplicacion.dosis * detalle.hectareas,
+          valor_teorico: aplicacion.dosis * selectedHectareas,
           valor_real: null,
           valor_devolucion: null,
         };
@@ -174,8 +178,11 @@ export class PulverizacionesController {
 
       const pulverizacion = await this.service.getById(data.pulverizacion_id);
 
-      const VALOR_TEORICO =
-        aplicacionUpdated.dosis * pulverizacion.detalle.hectareas;
+      const selectedHectareas = pulverizacion.detalle.campo.Lote.filter(
+        (lote) => pulverizacion.detalle.lotes.includes(lote.nombre),
+      ).reduce((acc, lote) => acc + lote.hectareas, 0);
+
+      const VALOR_TEORICO = aplicacionUpdated.dosis * selectedHectareas;
 
       const CONSUMO_DATA: ConsumoProducto = {
         id: data.consumo_id,

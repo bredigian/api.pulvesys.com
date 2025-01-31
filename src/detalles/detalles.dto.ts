@@ -12,9 +12,6 @@ export class DetalleDTO {
   @IsArray()
   lotes: string[];
 
-  @IsNumber()
-  hectareas: number;
-
   @IsUUID()
   cultivo_id: UUID;
 
