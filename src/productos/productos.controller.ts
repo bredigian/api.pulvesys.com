@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
@@ -17,6 +18,7 @@ import { ProductoDTO, ProductoStrictDTO } from './productos.dto';
 import { UUID } from 'crypto';
 import { Producto } from '@prisma/client';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Controller('productos')
 export class ProductosController {
@@ -79,6 +81,13 @@ export class ProductosController {
 
       return await this.service.deleteById(id);
     } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2003')
+          throw new ConflictException(
+            'No es posible eliminar lo seleccionado ya que es utilizado por otros objetos.',
+          );
+      }
+
       if (error) throw error;
 
       throw new InternalServerErrorException(
