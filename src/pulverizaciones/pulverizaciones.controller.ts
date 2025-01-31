@@ -185,7 +185,7 @@ export class PulverizacionesController {
         valor_real: data.valor_real ?? null,
         valor_devolucion: !data.valor_real
           ? null
-          : data.valor_real - VALOR_TEORICO,
+          : VALOR_TEORICO - data.valor_real,
       };
       await this.consumoProductosService.updateValores(CONSUMO_DATA);
 
