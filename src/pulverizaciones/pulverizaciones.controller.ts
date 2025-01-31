@@ -92,6 +92,16 @@ export class PulverizacionesController {
       if (!campo)
         throw new NotFoundException('El campo seleccionado no existe.');
 
+      const lotes = campo.Lote.map((lote) => lote.nombre);
+
+      for (const lote of data?.detalle.lotes) {
+        if (!lotes.includes(lote)) {
+          throw new BadRequestException(
+            `El lote ${lote} no corresponde al campo seleccionado.`,
+          );
+        }
+      }
+
       const cultivo = await this.cultivosService.findById(
         data?.detalle?.cultivo_id,
       );

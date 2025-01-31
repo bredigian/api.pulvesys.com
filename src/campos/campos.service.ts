@@ -18,7 +18,10 @@ export class CamposService {
   }
 
   async findById(id: UUID) {
-    return await this.prisma.campo.findUnique({ where: { id } });
+    return await this.prisma.campo.findUnique({
+      where: { id },
+      include: { Lote: true },
+    });
   }
 
   async editCampo(data: Campo) {
