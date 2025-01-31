@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   Post,
   Put,
+  UseGuards,
   UsePipes,
   ValidationPipe,
   Version,
@@ -15,6 +16,7 @@ import { ProductosService } from './productos.service';
 import { ProductoDTO, ProductoStrictDTO } from './productos.dto';
 import { UUID } from 'crypto';
 import { Producto } from '@prisma/client';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('productos')
 export class ProductosController {
@@ -22,6 +24,7 @@ export class ProductosController {
 
   @Get()
   @Version('1')
+  @UseGuards(AuthGuard)
   async getAll() {
     try {
       return await this.service.getAll();
@@ -36,6 +39,7 @@ export class ProductosController {
 
   @Post()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async addProducto(@Body() data: ProductoDTO) {
     try {
@@ -51,6 +55,7 @@ export class ProductosController {
 
   @Put()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async editProducto(@Body() data: ProductoStrictDTO) {
     try {
@@ -66,6 +71,7 @@ export class ProductosController {
 
   @Delete()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async deleteById(@Body() data: { id: UUID }) {
     try {

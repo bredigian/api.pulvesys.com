@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   Post,
   Put,
+  UseGuards,
   UsePipes,
   ValidationPipe,
   Version,
@@ -14,6 +15,7 @@ import { CultivosService } from './cultivos.service';
 import { CultivoDTO, CultivoStrictDTO } from './cultivos.dto';
 import { UUID } from 'crypto';
 import { ProductoStrictDTO } from 'src/productos/productos.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('cultivos')
 export class CultivosController {
@@ -21,6 +23,7 @@ export class CultivosController {
 
   @Get()
   @Version('1')
+  @UseGuards(AuthGuard)
   async getAll() {
     try {
       return await this.service.getAll();
@@ -35,6 +38,7 @@ export class CultivosController {
 
   @Post()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async addCultivo(@Body() data: CultivoDTO) {
     try {
@@ -50,6 +54,7 @@ export class CultivosController {
 
   @Put()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async editCultivo(@Body() data: CultivoStrictDTO) {
     try {
@@ -65,6 +70,7 @@ export class CultivosController {
 
   @Delete()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async deleteById(@Body() data: { id: UUID }) {
     try {

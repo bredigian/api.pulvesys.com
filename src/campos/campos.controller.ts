@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   Post,
   Put,
+  UseGuards,
   UsePipes,
   ValidationPipe,
   Version,
@@ -16,6 +17,7 @@ import { CampoDTO, CampoStrictDTO } from './campos.dto';
 import { UUID } from 'crypto';
 import { LotesService } from 'src/lotes/lotes.service';
 import { CoordinadasService } from 'src/coordinadas/coordinadas.service';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('campos')
 export class CamposController {
@@ -27,6 +29,7 @@ export class CamposController {
 
   @Get()
   @Version('1')
+  @UseGuards(AuthGuard)
   async getAll() {
     try {
       return await this.service.getAll();
@@ -41,6 +44,7 @@ export class CamposController {
 
   @Post()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async addCampo(@Body() data: CampoDTO) {
     try {
@@ -80,6 +84,7 @@ export class CamposController {
 
   @Put()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async editCampo(@Body() data: CampoStrictDTO) {
     try {
@@ -95,6 +100,7 @@ export class CamposController {
 
   @Delete()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async deleteById(@Body() data: { id: UUID }) {
     try {

@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
   UsePipes,
   ValidationPipe,
   Version,
@@ -27,6 +28,7 @@ import { TratamientosService } from 'src/tratamientos/tratamientos.service';
 import { ProductosService } from 'src/productos/productos.service';
 import { AplicacionConConsumoDTO } from 'src/aplicaciones/aplicaciones.dto';
 import { Aplicacion, ConsumoProducto } from '@prisma/client';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('pulverizaciones')
 export class PulverizacionesController {
@@ -43,6 +45,7 @@ export class PulverizacionesController {
 
   @Get()
   @Version('1')
+  @UseGuards(AuthGuard)
   async getAll() {
     try {
       return await this.service.getPulverizaciones();
@@ -57,6 +60,7 @@ export class PulverizacionesController {
 
   @Get('detalle')
   @Version('1')
+  @UseGuards(AuthGuard)
   async getById(@Query('id') id: UUID) {
     try {
       if (!id)
@@ -80,6 +84,7 @@ export class PulverizacionesController {
 
   @Post()
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async createPulverizacion(@Body() data: PulverizacionDTO) {
     try {
@@ -144,6 +149,7 @@ export class PulverizacionesController {
 
   @Patch('aplicacion')
   @Version('1')
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
   async editAplicacionConsumo(@Body() data: AplicacionConConsumoDTO) {
     try {
