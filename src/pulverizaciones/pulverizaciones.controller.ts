@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
+  Delete,
   Get,
   InternalServerErrorException,
   NotFoundException,
@@ -29,6 +31,7 @@ import { ProductosService } from 'src/productos/productos.service';
 import { AplicacionConConsumoDTO } from 'src/aplicaciones/aplicaciones.dto';
 import { Aplicacion, ConsumoProducto } from '@prisma/client';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Controller('pulverizaciones')
 export class PulverizacionesController {
@@ -199,6 +202,33 @@ export class PulverizacionesController {
       return await this.service.getById(data.pulverizacion_id);
     } catch (error) {
       if (error instanceof Error) throw error;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
+
+  @Delete()
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
+  async deleteById(@Body() data: { id: UUID }) {
+    try {
+      const { id } = data;
+
+      return await this.service.deleteById(id);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2003')
+          throw new ConflictException(
+            'No es posible eliminar lo seleccionado ya que es utilizado por otros objetos.',
+          );
+
+        throw new Error(error.message);
+      }
+
+      if (error) throw error;
 
       throw new InternalServerErrorException(
         'Se produjo un error interno en el servidor.',
