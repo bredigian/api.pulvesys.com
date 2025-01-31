@@ -12,6 +12,8 @@ import { PulverizacionesModule } from './pulverizaciones/pulverizaciones.module'
 import { TratamientosModule } from './tratamientos/tratamientos.module';
 import { LotesModule } from './lotes/lotes.module';
 import { CoordinadasModule } from './coordinadas/coordinadas.module';
+import { AuthModule } from './auth/auth.module';
+import { SesionesModule } from './sesiones/sesiones.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { CoordinadasModule } from './coordinadas/coordinadas.module';
     ConsumoProductoModule,
     LotesModule,
     CoordinadasModule,
+    AuthModule,
+    SesionesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

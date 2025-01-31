@@ -109,3 +109,23 @@ model TipoTratamiento {
   nombre  String
   Detalle Detalle[]
 }
+
+model Usuario {
+  id             String   @id @unique @default(uuid())
+  nombre_usuario String   @unique
+  contrasena     String
+  nombre         String
+  apellido       String
+  Sesion         Sesion[]
+}
+
+model Sesion {
+  id           String   @id @unique @default(uuid())
+  usuario_id   String
+  usuario      Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  access_token String?  @unique
+  refesh_token String?  @unique
+  createdAt    DateTime @default(now())
+  expireIn     DateTime
+  updatedAt    DateTime @updatedAt
+}
