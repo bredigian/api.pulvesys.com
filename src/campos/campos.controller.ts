@@ -1,12 +1,13 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
   Delete,
   Get,
   InternalServerErrorException,
+  Patch,
   Post,
-  Put,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -84,13 +85,41 @@ export class CamposController {
     }
   }
 
-  @Put()
+  @Patch()
   @Version('1')
   @UseGuards(AuthGuard)
-  @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async editCampo(@Body() data: CampoStrictDTO) {
+  async editCampo(@Body() data: CampoDTO) {
     try {
-      return await this.service.editCampo(data);
+      await this.service.editCampo(data);
+      const { Lote } = data;
+      for (const lote of Lote) {
+        if ('id' in lote) {
+          const savedLote = await this.lotesService.findByID(lote.id as UUID);
+          if (savedLote) continue;
+          else
+            throw new BadRequestException(
+              'Ocurrió un problema al verificar los lotes ya guardados',
+            );
+        }
+
+        const loteCreated = await this.lotesService.addLote({
+          id: undefined,
+          nombre: lote.nombre,
+          hectareas: lote.hectareas,
+          color: lote.color,
+          campo_id: data.id,
+        });
+        for (const zona of lote.zona) {
+          await this.coordinadaService.addCoordinada({
+            id: undefined,
+            lote_id: loteCreated.id,
+            lat: zona.lat,
+            lng: zona.lng,
+          });
+        }
+      }
+
+      return await this.service.findById(data.id);
     } catch (error) {
       if (error) throw error;
 

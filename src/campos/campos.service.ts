@@ -25,7 +25,10 @@ export class CamposService {
   }
 
   async editCampo(data: Campo) {
-    return await this.prisma.campo.update({ where: { id: data.id }, data });
+    return await this.prisma.campo.update({
+      where: { id: data.id },
+      data: { nombre: data.nombre },
+    });
   }
 
   async deleteById(id: UUID) {
