@@ -1,15 +1,46 @@
 import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
+import helmet from 'helmet';
+
+type TEnvironment = 'development' | 'production' | undefined;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaulrSrc: ["'none'"],
+          scriptSrc: ["'none'"],
+          styleSrc: ["'none'"],
+          imgSrc: ["'self"],
+          connectSrc: ["'self'", 'https://pulvesys.com'],
+          frameAncestors: ["'none'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+
+  const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
+
+  app.enableCors({
+    origin:
+      ENVIRONMENT === 'production'
+        ? 'https://pulvesys.com'
+        : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    methods: 'GET,POST,PUT,PATCH,DELETE',
+    allowedHeaders: 'Content-Type, Authorization',
+    credentials: true,
+  });
+
   app.enableVersioning();
 
   const PORT = process.env.PORT || 3000;
 
   await app.listen(PORT, () =>
-    console.log('API Server is running at PORT', PORT),
+    console.log('PulveSys API is running on the server ✅'),
   );
 }
 bootstrap();
