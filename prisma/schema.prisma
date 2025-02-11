@@ -47,7 +47,7 @@ model Producto {
   id              String            @id @unique @default(uuid())
   nombre          String
   unidad          UNIDAD
-  cantidad        Float
+  cantidad        Float?
   pulverizaciones Pulverizacion[]   @relation("PulverizacionProductos")
   Aplicacion      Aplicacion[]
   ConsumoProducto ConsumoProducto[]

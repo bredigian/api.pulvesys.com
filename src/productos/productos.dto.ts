@@ -19,6 +19,7 @@ export class ProductoDTO {
   @IsEnum(UNIDAD)
   unidad: UNIDAD;
 
+  @IsOptional()
   @IsNumber()
   cantidad: number;
 }
@@ -33,6 +34,7 @@ export class ProductoStrictDTO {
   @IsEnum(UNIDAD)
   unidad: UNIDAD;
 
+  @IsOptional()
   @IsNumber()
   cantidad: number;
 }
