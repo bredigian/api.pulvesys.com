@@ -35,6 +35,7 @@ model Detalle {
   tratamiento_id String          @default("-")
   tratamiento    TipoTratamiento @relation(fields: [tratamiento_id], references: [id], onDelete: SetDefault)
   Pulverizacion  Pulverizacion[]
+  observacion    String?
 }
 
 enum UNIDAD {

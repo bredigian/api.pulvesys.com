@@ -1,4 +1,4 @@
-import { IsArray, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { IsArray, IsOptional, IsString, IsUUID } from 'class-validator';
 
 import { UUID } from 'crypto';
 
@@ -17,4 +17,8 @@ export class DetalleDTO {
 
   @IsUUID()
   tratamiento_id: UUID;
+
+  @IsOptional()
+  @IsString()
+  observacion: string;
 }
