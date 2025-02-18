@@ -68,4 +68,8 @@ export class SesionesService {
       },
     });
   }
+
+  async findAccessToken(access_token: Sesion['access_token']) {
+    return await this.prisma.sesion.findUnique({ where: { access_token } });
+  }
 }

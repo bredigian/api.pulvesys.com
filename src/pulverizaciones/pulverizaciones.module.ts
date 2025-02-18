@@ -9,6 +9,7 @@ import { ProductosService } from 'src/productos/productos.service';
 import { PulverizacionesController } from './pulverizaciones.controller';
 import { PulverizacionesService } from './pulverizaciones.service';
 import { TratamientosService } from 'src/tratamientos/tratamientos.service';
+import { SesionesService } from 'src/sesiones/sesiones.service';
 
 @Module({
   controllers: [PulverizacionesController],
@@ -22,6 +23,7 @@ import { TratamientosService } from 'src/tratamientos/tratamientos.service';
     TratamientosService,
     ProductosService,
     PrismaService,
+    SesionesService,
   ],
 })
 export class PulverizacionesModule {}
