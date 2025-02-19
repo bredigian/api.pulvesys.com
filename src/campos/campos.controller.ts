@@ -153,4 +153,29 @@ export class CamposController {
       );
     }
   }
+
+  @Delete('lote')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
+  async deleteLoteById(@Body() data: { id: UUID }) {
+    try {
+      const { id } = data;
+
+      return await this.lotesService.deleteById(id);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2003')
+          throw new ConflictException(
+            'No es posible eliminar lo seleccionado ya que es utilizado por otros objetos.',
+          );
+      }
+
+      if (error) throw error;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
 }

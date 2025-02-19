@@ -14,4 +14,8 @@ export class LotesService {
   async findByID(id: UUID) {
     return this.prisma.lote.findUnique({ where: { id } });
   }
+
+  async deleteById(id: UUID) {
+    return this.prisma.lote.delete({ where: { id } });
+  }
 }
