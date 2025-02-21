@@ -21,6 +21,7 @@ export class PulverizacionesService {
         ConsumoProducto: true,
         productos: true,
       },
+      orderBy: { fecha: 'desc' },
     });
   }
 
