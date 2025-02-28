@@ -9,7 +9,7 @@ jobs:
       DATABASE_URL: ${{secrets.PRODUCTION_DATABASE_URL}}
       JWT_SECRET_KEY: ${{secrets.JWT_SECRET_KEY}}
       PORT: ${{secrets.PRODUCTION_PORT}}
-      NODE_ENV: 'production'
+      NODE_ENV: "production"
     strategy:
       matrix:
         node-version: [22.x]
