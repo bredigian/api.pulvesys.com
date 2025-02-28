@@ -12,13 +12,15 @@ import {
   InternalServerErrorException,
   NotFoundException,
   Post,
+  Req,
+  Res,
   UnauthorizedException,
   UsePipes,
   ValidationPipe,
   Version,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { DateTime } from 'luxon';
+import { Request, Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -26,12 +28,17 @@ export class AuthController {
     private readonly service: AuthService,
     private readonly sesionesService: SesionesService,
     private readonly jwtService: JwtService,
+    private readonly authService: AuthService,
   ) {}
 
   @Version('1')
   @Post('signin')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async signin(@Body() payload: AuthDto) {
+  async signin(
+    @Req() request: Request,
+    @Body() payload: AuthDto,
+    @Res() response: Response,
+  ) {
     try {
       const { nombre_usuario, contrasena } = payload;
       const exists = await this.service.findByUsername(nombre_usuario);
@@ -54,20 +61,28 @@ export class AuthController {
           'Se alcanzó el limite de sesiones concurrentes. Puedes iniciar sesión en hasta 3 dispositivos al mismo tiempo.',
         );
 
-      const access_token = await this.jwtService.signAsync({
-        sub: id,
-        nombre_usuario,
-        nombre,
-        apellido,
+      const { access_token, refresh_token } =
+        await this.authService.generateTokens(id);
+
+      const { expireIn } = await this.sesionesService.createSesion(
+        access_token,
+        refresh_token,
+        id,
+      );
+
+      response.cookie('refresh_token', refresh_token, {
+        httpOnly: true,
+        secure: true,
+        expires: new Date(expireIn), // 15 dias
+        sameSite: 'none',
+        domain: request.hostname,
       });
 
-      const session = await this.sesionesService.createSesion(access_token, id);
-
-      return {
+      return response.json({
         access_token,
-        expireIn: session.expireIn,
+        expireIn,
         userdata: { nombre_usuario, nombre, apellido },
-      };
+      });
     } catch (e) {
       if (e) throw e;
 
@@ -80,9 +95,16 @@ export class AuthController {
   @Version('1')
   @Get('sesion')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async verifySesion(@Headers('Authorization') authorization: string) {
+  async verifySesion(
+    @Headers('Authorization') authorization: string,
+    @Headers('Cookie') cookie_refresh_token: string,
+    @Res() response: Response,
+  ) {
     try {
-      const access_token_from_request = authorization?.substring(7);
+      const access_token_from_request = authorization
+        ?.substring(7)
+        .replaceAll("'", '')
+        .replaceAll('"', '');
       if (!access_token_from_request)
         throw new UnauthorizedException('El token de acceso es requerido.');
 
@@ -92,25 +114,48 @@ export class AuthController {
       if (!session)
         throw new NotFoundException('La sesión no existe o ya expiró.');
 
-      const { access_token, expireIn, usuario } = session;
-      if (
-        DateTime.fromJSDate(new Date(expireIn)).toMillis() <
-        DateTime.now().toMillis()
-      ) {
-        await this.sesionesService.deleteSesionByToken(access_token);
-        throw new UnauthorizedException('La sesión ha expirado.');
-      }
-
-      const isValid = await this.jwtService.verifyAsync(access_token);
-      if (!isValid) throw new UnauthorizedException('La sesión ha expirado');
-
+      const { access_token, refresh_token, expireIn, usuario } = session;
       const { nombre, nombre_usuario, apellido } = usuario;
 
-      return {
-        access_token: access_token,
-        expireIn: expireIn,
+      let updatedAccessToken = access_token;
+      let updatedRefreshToken = refresh_token;
+      let updatedExpireIn: Date | string = expireIn;
+
+      try {
+        await this.jwtService.verifyAsync(access_token);
+      } catch (e) {
+        if (e) {
+          let { value: refresh_token_from_cookie } =
+            JSON.parse(cookie_refresh_token);
+          refresh_token_from_cookie = refresh_token_from_cookie
+            .replaceAll("'", '')
+            .replaceAll('"', '');
+
+          if (!refresh_token)
+            throw new UnauthorizedException(
+              'El token de refresco es requerido.',
+            );
+
+          const {
+            access_token: updated_access_token,
+            refresh_token: updated_refresh_token,
+            expireIn: updated_expire_in,
+          } = await this.sesionesService.refreshTokens(
+            refresh_token_from_cookie,
+          );
+
+          updatedAccessToken = updated_access_token;
+          updatedRefreshToken = updated_refresh_token;
+          updatedExpireIn = updated_expire_in as string;
+        }
+      }
+
+      return response.json({
+        access_token: updatedAccessToken,
+        refresh_token: updatedRefreshToken,
+        expireIn: updatedExpireIn,
         userdata: { nombre_usuario, nombre, apellido },
-      };
+      });
     } catch (e) {
       if (e) {
         console.error(e);
@@ -126,10 +171,27 @@ export class AuthController {
   @Version('1')
   @Delete('sesion')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async signout(@Headers('Authorization') authorization: string) {
+  async signout(
+    @Req() request: Request,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const access_token = authorization.substring(7);
-      return await this.sesionesService.deleteSesionByToken(access_token);
+      const access_token = authorization
+        .substring(7)
+        ?.replaceAll("'", '')
+        .replaceAll('"', '');
+      const refresh_token = request.cookies['refresh_token']
+        ?.replaceAll("'", '')
+        .replaceAll('"', '');
+      if (!access_token || !refresh_token)
+        throw new UnauthorizedException(
+          'Los tokens de autenticación son requeridos.',
+        );
+
+      return await this.sesionesService.deleteSessionByTokens(
+        access_token,
+        refresh_token,
+      );
     } catch (e) {
       if (e) {
         console.error(e);

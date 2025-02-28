@@ -8,6 +8,7 @@ import {
   InternalServerErrorException,
   Patch,
   Post,
+  Res,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -15,12 +16,13 @@ import {
 } from '@nestjs/common';
 
 import { CamposService } from './campos.service';
-import { CampoDTO, CampoStrictDTO } from './campos.dto';
+import { CampoDTO } from './campos.dto';
 import { UUID } from 'crypto';
 import { LotesService } from 'src/lotes/lotes.service';
 import { CoordinadasService } from 'src/coordinadas/coordinadas.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { Response } from 'express';
 
 @Controller('campos')
 export class CamposController {
@@ -33,9 +35,10 @@ export class CamposController {
   @Get()
   @Version('1')
   @UseGuards(AuthGuard)
-  async getAll() {
+  async getAll(@Res() response: Response) {
     try {
-      return await this.service.getAll();
+      const data = await this.service.getAll();
+      return response.json(data);
     } catch (error) {
       if (error) throw error;
 
@@ -49,7 +52,7 @@ export class CamposController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async addCampo(@Body() data: CampoDTO) {
+  async addCampo(@Res() response: Response, @Body() data: CampoDTO) {
     try {
       const campo = await this.service.addCampo({
         id: undefined,
@@ -75,7 +78,7 @@ export class CamposController {
         }
       }
 
-      return campo;
+      return response.json(campo);
     } catch (error) {
       if (error) throw error;
 
@@ -88,7 +91,7 @@ export class CamposController {
   @Patch()
   @Version('1')
   @UseGuards(AuthGuard)
-  async editCampo(@Body() data: CampoDTO) {
+  async editCampo(@Res() response: Response, @Body() data: CampoDTO) {
     try {
       await this.service.editCampo(data);
       const { Lote } = data;
@@ -119,7 +122,8 @@ export class CamposController {
         }
       }
 
-      return await this.service.findById(data.id);
+      const updated = await this.service.findById(data.id);
+      return response.json(updated);
     } catch (error) {
       if (error) throw error;
 
@@ -133,11 +137,12 @@ export class CamposController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteById(@Body() data: { id: UUID }) {
+  async deleteById(@Res() response: Response, @Body() data: { id: UUID }) {
     try {
       const { id } = data;
 
-      return await this.service.deleteById(id);
+      const deleted = await this.service.deleteById(id);
+      return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2003')
@@ -158,11 +163,12 @@ export class CamposController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteLoteById(@Body() data: { id: UUID }) {
+  async deleteLoteById(@Res() response: Response, @Body() data: { id: UUID }) {
     try {
       const { id } = data;
 
-      return await this.lotesService.deleteById(id);
+      const deletedLote = await this.lotesService.deleteById(id);
+      return response.json(deletedLote);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2003')

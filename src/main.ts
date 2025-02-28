@@ -1,5 +1,6 @@
 import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
+import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
 type TEnvironment = 'development' | 'production' | undefined;
@@ -34,6 +35,8 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
   });
+
+  app.use(cookieParser());
 
   app.enableVersioning();
 

@@ -121,12 +121,12 @@ model Usuario {
 }
 
 model Sesion {
-  id           String   @id @unique @default(uuid())
-  usuario_id   String
-  usuario      Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
-  access_token String?  @unique
-  refesh_token String?  @unique
-  createdAt    DateTime @default(now())
-  expireIn     DateTime
-  updatedAt    DateTime @updatedAt
+  id            String   @id @unique @default(uuid())
+  usuario_id    String
+  usuario       Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  access_token  String?  @unique
+  refresh_token String?  @unique
+  createdAt     DateTime @default(now())
+  expireIn      DateTime
+  updatedAt     DateTime @updatedAt
 }

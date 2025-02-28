@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -32,6 +33,7 @@ import { AplicacionConConsumoDTO } from 'src/aplicaciones/aplicaciones.dto';
 import { Aplicacion, ConsumoProducto } from '@prisma/client';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { Response } from 'express';
 
 @Controller('pulverizaciones')
 export class PulverizacionesController {
@@ -49,9 +51,10 @@ export class PulverizacionesController {
   @Get()
   @Version('1')
   @UseGuards(AuthGuard)
-  async getAll() {
+  async getAll(@Res() response: Response) {
     try {
-      return await this.service.getPulverizaciones();
+      const data = await this.service.getPulverizaciones();
+      return response.json(data);
     } catch (error) {
       if (error) throw error;
 
@@ -64,7 +67,7 @@ export class PulverizacionesController {
   @Get('detalle')
   @Version('1')
   @UseGuards(AuthGuard)
-  async getById(@Query('id') id: UUID) {
+  async getById(@Res() response: Response, @Query('id') id: UUID) {
     try {
       if (!id)
         throw new BadRequestException(
@@ -75,7 +78,7 @@ export class PulverizacionesController {
       if (!detalle)
         throw new NotFoundException('La pulverización no fue encontrada.');
 
-      return detalle;
+      return response.json(detalle);
     } catch (error) {
       if (error) throw error;
 
@@ -89,7 +92,10 @@ export class PulverizacionesController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async createPulverizacion(@Body() data: PulverizacionDTO) {
+  async createPulverizacion(
+    @Res() response: Response,
+    @Body() data: PulverizacionDTO,
+  ) {
     try {
       const campo = await this.camposService.findById(data?.detalle?.campo_id);
       if (!campo)
@@ -154,7 +160,7 @@ export class PulverizacionesController {
         await this.consumoProductosService.createConsumo(consumo_payload);
       }
 
-      return pulverizacion;
+      return response.json(pulverizacion);
     } catch (error) {
       if (error instanceof Error) throw error;
 
@@ -168,7 +174,10 @@ export class PulverizacionesController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async editAplicacionConsumo(@Body() data: AplicacionConConsumoDTO) {
+  async editAplicacionConsumo(
+    @Res() response: Response,
+    @Body() data: AplicacionConConsumoDTO,
+  ) {
     try {
       const APLICACION_DATA: Aplicacion = {
         pulverizacion_id: data.pulverizacion_id,
@@ -199,7 +208,8 @@ export class PulverizacionesController {
       };
       await this.consumoProductosService.updateValores(CONSUMO_DATA);
 
-      return await this.service.getById(data.pulverizacion_id);
+      const updated = await this.service.getById(data.pulverizacion_id);
+      return response.json(updated);
     } catch (error) {
       if (error instanceof Error) throw error;
 
@@ -213,11 +223,12 @@ export class PulverizacionesController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteById(@Body() data: { id: UUID }) {
+  async deleteById(@Res() response: Response, @Body() data: { id: UUID }) {
     try {
       const { id } = data;
 
-      return await this.service.deleteById(id);
+      const deleted = await this.service.deleteById(id);
+      return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2003')
