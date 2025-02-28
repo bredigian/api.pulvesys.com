@@ -28,8 +28,6 @@ jobs:
         run: pnpm i
       - name: Sync database
         run: pnpx prisma migrate dev
-      - name: Generate Prisma Client
-        run: pnpx prisma generate
       - name: Build API
         run: pnpm run build
       - name: Reload proxy server
