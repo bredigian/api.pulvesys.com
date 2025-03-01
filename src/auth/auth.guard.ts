@@ -28,6 +28,9 @@ export class AuthGuard implements CanActivate {
     const { access_token, refresh_token } =
       this.extractTokensFromHeader(request);
 
+    this.logger.debug(`access_token from request: ${access_token}`);
+    this.logger.debug(`refresh_token from request: ${refresh_token}`);
+
     if (!refresh_token || !access_token)
       throw new UnauthorizedException('No tienes los permisos necesarios.');
 
