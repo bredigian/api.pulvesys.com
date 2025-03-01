@@ -140,12 +140,8 @@ export class AuthController {
       let updatedRefreshToken = refresh_token;
       let updatedExpireIn: Date | string = expireIn;
 
-      this.logger.debug(`access_token from request: ${updatedAccessToken}`);
-      this.logger.debug(`refresh_token from request: ${updatedRefreshToken}`);
-
       try {
         await this.jwtService.verifyAsync(access_token);
-        this.logger.log('El token recibido es válido ✅');
       } catch (e) {
         if (e) {
           let { value: refresh_token_from_cookie } =

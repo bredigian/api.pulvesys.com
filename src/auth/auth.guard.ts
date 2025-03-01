@@ -28,9 +28,6 @@ export class AuthGuard implements CanActivate {
     const { access_token, refresh_token } =
       this.extractTokensFromHeader(request);
 
-    this.logger.debug(`access_token from request: ${access_token}`);
-    this.logger.debug(`refresh_token from request: ${refresh_token}`);
-
     if (!refresh_token || !access_token)
       throw new UnauthorizedException('No tienes los permisos necesarios.');
 
@@ -50,9 +47,6 @@ export class AuthGuard implements CanActivate {
     try {
       await this.jwtService.verifyAsync(access_token);
     } catch (e) {
-      this.logger.warn(
-        `Revalidating with REFRESH_TOKEN=${storedSession.refresh_token}`,
-      );
       const {
         access_token: updated_access_token,
         refresh_token: updated_refresh_token,
@@ -62,10 +56,6 @@ export class AuthGuard implements CanActivate {
       updatedAccessToken = updated_access_token;
       updatedRefreshToken = updated_refresh_token;
       updatedExpireIn = new Date(updated_expire_in);
-
-      this.logger.log(
-        `TOKENS REVALIDATED! Updated REFRESH_TOKEN => ${updatedRefreshToken}`,
-      );
     }
 
     const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
