@@ -68,21 +68,23 @@ export class AuthGuard implements CanActivate {
       );
     }
 
-    // const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
-    // const domain = Hostname[ENVIRONMENT];
+    const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
+    const domain = Hostname[ENVIRONMENT];
 
     response.cookie('refresh_token', updatedRefreshToken, {
       httpOnly: true,
       secure: true,
       expires: updatedExpireIn,
       sameSite: 'none',
-      // domain: domain,
+      domain,
     });
     response.cookie('access_token', updatedAccessToken, {
       expires: updatedExpireIn,
+      domain,
     });
     response.cookie('userdata', JSON.stringify(storedSession.usuario), {
       expires: updatedExpireIn,
+      domain,
     });
 
     return true;
