@@ -83,10 +83,6 @@ export class SesionesService {
     });
   }
 
-  async findAccessToken(access_token: Sesion['access_token']) {
-    return await this.prisma.sesion.findUnique({ where: { access_token } });
-  }
-
   async refreshTokens(refresh_token: Sesion['refresh_token']): Promise<Tokens> {
     const session = await this.prisma.sesion.findUnique({
       where: { refresh_token },

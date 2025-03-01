@@ -81,6 +81,16 @@ export class AuthController {
         sameSite: 'none',
         domain: domain,
       });
+      response.cookie('access_token', access_token, {
+        expires: new Date(expireIn), // 15 dias
+      });
+      response.cookie(
+        'userdata',
+        JSON.stringify({ nombre_usuario, nombre, apellido }),
+        {
+          expires: new Date(expireIn), // 15 dias
+        },
+      );
 
       return response.json({
         access_token,
@@ -150,9 +160,30 @@ export class AuthController {
 
           updatedAccessToken = updated_access_token;
           updatedRefreshToken = updated_refresh_token;
-          updatedExpireIn = updated_expire_in as string;
+          updatedExpireIn = new Date(updated_expire_in);
         }
       }
+
+      const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
+      const domain = Hostname[ENVIRONMENT];
+
+      response.cookie('refresh_token', refresh_token, {
+        httpOnly: true,
+        secure: true,
+        expires: updatedExpireIn, // 15 dias
+        sameSite: 'none',
+        domain: domain,
+      });
+      response.cookie('access_token', access_token, {
+        expires: updatedExpireIn, // 15 dias
+      });
+      response.cookie(
+        'userdata',
+        JSON.stringify({ nombre_usuario, nombre, apellido }),
+        {
+          expires: updatedExpireIn, // 15 dias
+        },
+      );
 
       return response.json({
         access_token: updatedAccessToken,

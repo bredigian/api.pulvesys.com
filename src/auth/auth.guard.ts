@@ -34,12 +34,12 @@ export class AuthGuard implements CanActivate {
     const response: Response = context.switchToHttp().getResponse();
 
     const storedSession =
-      await this.sesionesService.findAccessToken(access_token);
-    console.log(storedSession);
+      await this.sesionesService.getSesionByToken(access_token);
     if (!storedSession)
       throw new UnauthorizedException(
         'El token no es válido o la sesión ya venció.',
       );
+
     let updatedAccessToken = storedSession.access_token;
     let updatedRefreshToken = storedSession.refresh_token;
     let updatedExpireIn = storedSession.expireIn;
@@ -69,6 +69,9 @@ export class AuthGuard implements CanActivate {
     const domain = Hostname[ENVIRONMENT];
 
     response.cookie('access_token', updatedAccessToken, {
+      expires: updatedExpireIn,
+    });
+    response.cookie('userdata', JSON.stringify(storedSession.usuario), {
       expires: updatedExpireIn,
     });
     response.cookie('refresh_token', updatedRefreshToken, {
