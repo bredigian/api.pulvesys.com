@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
-type TEnvironment = 'development' | 'production' | undefined;
+type TEnvironment = 'development' | 'production' | 'beta' | undefined;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,7 +16,11 @@ async function bootstrap() {
           scriptSrc: ["'none'"],
           styleSrc: ["'none'"],
           imgSrc: ["'self"],
-          connectSrc: ["'self'", 'https://pulvesys.com'],
+          connectSrc: [
+            "'self'",
+            'https://pulvesys.com',
+            'https://beta.pulvesys.com',
+          ],
           frameAncestors: ["'none'"],
         },
       },
@@ -30,7 +34,9 @@ async function bootstrap() {
     origin:
       ENVIRONMENT === 'production'
         ? 'https://pulvesys.com'
-        : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        : ENVIRONMENT === 'beta'
+          ? 'https://beta.pulvesys.com'
+          : ['http://localhost:3000', 'http://127.0.0.1:3000'],
     methods: 'GET,POST,PUT,PATCH,DELETE',
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
