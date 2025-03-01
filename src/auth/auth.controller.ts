@@ -21,6 +21,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request, Response } from 'express';
+import { Hostname, TEnvironment } from 'src/types/environment.types';
 
 @Controller('auth')
 export class AuthController {
@@ -70,12 +71,15 @@ export class AuthController {
         id,
       );
 
+      const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
+      const domain = Hostname[ENVIRONMENT];
+
       response.cookie('refresh_token', refresh_token, {
         httpOnly: true,
         secure: true,
         expires: new Date(expireIn), // 15 dias
         sameSite: 'none',
-        domain: request.hostname,
+        domain: domain,
       });
 
       return response.json({

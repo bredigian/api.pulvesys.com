@@ -11,6 +11,7 @@ import { isUUID } from 'class-validator';
 import { Request, Response } from 'express';
 import { SesionesService } from 'src/sesiones/sesiones.service';
 import { Tokens } from 'src/types/auth.types';
+import { Hostname, TEnvironment } from 'src/types/environment.types';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -64,6 +65,9 @@ export class AuthGuard implements CanActivate {
       );
     }
 
+    const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
+    const domain = Hostname[ENVIRONMENT];
+
     response.cookie('access_token', updatedAccessToken, {
       expires: updatedExpireIn,
     });
@@ -72,14 +76,13 @@ export class AuthGuard implements CanActivate {
       secure: true,
       expires: updatedExpireIn,
       sameSite: 'none',
-      domain: 'localhost',
+      domain: domain,
     });
 
     return true;
   }
 
   private extractTokensFromHeader(request: Request): Tokens | undefined {
-    this.logger.warn('¿Cookies? => ', request.cookies);
     if (!request?.headers?.authorization || !request?.headers?.cookie)
       return { access_token: undefined, refresh_token: undefined };
 
@@ -91,8 +94,6 @@ export class AuthGuard implements CanActivate {
 
     access_token = access_token.replaceAll('"', '').replaceAll("'", '');
     refresh_token = refresh_token.replaceAll('"', '').replaceAll("'", '');
-
-    console.log(access_token, refresh_token);
 
     return type === 'Bearer' && isUUID(refresh_token)
       ? { access_token, refresh_token }
