@@ -1,4 +1,4 @@
-export type TEnvironment = 'development' | 'production' | 'beta';
+export type TEnvironment = 'development' | 'production' | 'beta' | 'tunnel';
 
 export enum Hostname {
   development = 'localhost',

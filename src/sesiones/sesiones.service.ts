@@ -52,12 +52,9 @@ export class SesionesService {
     return await this.prisma.sesion.delete({ where: { refresh_token } });
   }
 
-  async deleteSessionByTokens(
-    access_token: Sesion['access_token'],
-    refresh_token: Sesion['refresh_token'],
-  ) {
+  async deleteSessionByAccessToken(access_token: Sesion['access_token']) {
     return await this.prisma.sesion.delete({
-      where: { access_token, refresh_token },
+      where: { access_token },
     });
   }
 

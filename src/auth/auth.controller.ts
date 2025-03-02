@@ -215,6 +215,7 @@ export class AuthController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async signout(
     @Req() request: Request,
+    @Res() response: Response,
     @Headers('Authorization') authorization: string,
   ) {
     try {
@@ -229,11 +230,14 @@ export class AuthController {
         throw new UnauthorizedException(
           'Los tokens de autenticación son requeridos.',
         );
+      const deletedSession =
+        await this.sesionesService.deleteSessionByAccessToken(access_token);
 
-      return await this.sesionesService.deleteSessionByTokens(
-        access_token,
-        refresh_token,
-      );
+      response.clearCookie('access_token');
+      response.clearCookie('refresh_token');
+      response.clearCookie('userdata');
+
+      return response.json(deletedSession);
     } catch (e) {
       if (e) {
         console.error(e);
