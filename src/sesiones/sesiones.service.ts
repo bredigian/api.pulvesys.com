@@ -1,9 +1,15 @@
 import { Sesion, Usuario } from '@prisma/client';
 
 import { DateTime } from 'luxon';
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { randomUUID, UUID } from 'node:crypto';
+import { Tokens } from 'src/types/auth.types';
 
 @Injectable()
 export class SesionesService {
@@ -27,24 +33,32 @@ export class SesionesService {
 
   async createSesion(
     access_token: Sesion['access_token'],
+    refresh_token: UUID,
     usuario_id: Sesion['usuario_id'],
   ) {
-    const { exp } = await this.jwtService.decode(access_token);
-    const expires_in = DateTime.fromMillis(exp * 1000)
-      .toUTC()
-      .toISO();
+    const expireIn = DateTime.now().plus({ days: 7 }).toUTC().toISO();
 
     return await this.prisma.sesion.create({
       data: {
-        access_token: access_token,
+        access_token,
+        refresh_token,
         usuario_id,
-        expireIn: expires_in,
+        expireIn,
       },
     });
   }
 
-  async deleteSesionByToken(access_token: Sesion['access_token']) {
-    return await this.prisma.sesion.delete({ where: { access_token } });
+  async deleteSesionByRefreshToken(refresh_token: Sesion['refresh_token']) {
+    return await this.prisma.sesion.delete({ where: { refresh_token } });
+  }
+
+  async deleteSessionByTokens(
+    access_token: Sesion['access_token'],
+    refresh_token: Sesion['refresh_token'],
+  ) {
+    return await this.prisma.sesion.delete({
+      where: { access_token, refresh_token },
+    });
   }
 
   getMaxConcurrentSesionesValue() {
@@ -69,7 +83,39 @@ export class SesionesService {
     });
   }
 
-  async findAccessToken(access_token: Sesion['access_token']) {
-    return await this.prisma.sesion.findUnique({ where: { access_token } });
+  async refreshTokens(refresh_token: Sesion['refresh_token']): Promise<Tokens> {
+    const session = await this.prisma.sesion.findUnique({
+      where: { refresh_token },
+    });
+    if (!session)
+      throw new NotFoundException(
+        'No se encontró la sesión con el token de refresco enviado.',
+      );
+
+    const isExpired = new Date(session.expireIn).getTime() < Date.now();
+    if (isExpired) {
+      await this.deleteSesionByRefreshToken(refresh_token);
+      throw new UnauthorizedException('La sesión ha vencido.');
+    }
+
+    const updated_access_token = await this.jwtService.signAsync({
+      sub: session.usuario_id,
+    });
+    const updated_refresh_token = randomUUID();
+    const expireIn = DateTime.now().plus({ days: 7 }).toUTC().toISO();
+    const updatedSession = await this.prisma.sesion.update({
+      where: { id: session.id },
+      data: {
+        access_token: updated_access_token,
+        refresh_token: updated_refresh_token,
+        expireIn,
+      },
+    });
+
+    return {
+      access_token: updatedSession.access_token,
+      refresh_token: updatedSession.refresh_token as UUID,
+      expireIn: updatedSession.expireIn,
+    };
   }
 }

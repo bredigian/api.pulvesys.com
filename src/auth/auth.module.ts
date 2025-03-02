@@ -13,7 +13,7 @@ import { SesionesService } from 'src/sesiones/sesiones.service';
       global: true,
       secret: process.env.JWT_SECRET_KEY,
       signOptions: {
-        expiresIn: '30d',
+        expiresIn: '15m', // 15 minutos
       },
     }),
   ],

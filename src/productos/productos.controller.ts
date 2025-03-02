@@ -7,6 +7,7 @@ import {
   InternalServerErrorException,
   Post,
   Put,
+  Res,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -16,9 +17,9 @@ import {
 import { ProductosService } from './productos.service';
 import { ProductoDTO, ProductoStrictDTO } from './productos.dto';
 import { UUID } from 'crypto';
-import { Producto } from '@prisma/client';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { Response } from 'express';
 
 @Controller('productos')
 export class ProductosController {
@@ -27,9 +28,10 @@ export class ProductosController {
   @Get()
   @Version('1')
   @UseGuards(AuthGuard)
-  async getAll() {
+  async getAll(@Res() response: Response) {
     try {
-      return await this.service.getAll();
+      const data = await this.service.getAll();
+      return response.json(data);
     } catch (error) {
       if (error) throw error;
 
@@ -43,9 +45,10 @@ export class ProductosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async addProducto(@Body() data: ProductoDTO) {
+  async addProducto(@Res() response: Response, @Body() data: ProductoDTO) {
     try {
-      return await this.service.addProducto(data);
+      const producto = await this.service.addProducto(data);
+      return response.json(producto);
     } catch (error) {
       if (error) throw error;
 
@@ -59,9 +62,13 @@ export class ProductosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async editProducto(@Body() data: ProductoStrictDTO) {
+  async editProducto(
+    @Res() response: Response,
+    @Body() data: ProductoStrictDTO,
+  ) {
     try {
-      return await this.service.editProducto(data);
+      const updated = await this.service.editProducto(data);
+      return response.json(updated);
     } catch (error) {
       if (error) throw error;
 
@@ -75,11 +82,12 @@ export class ProductosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteById(@Body() data: { id: UUID }) {
+  async deleteById(@Res() response: Response, @Body() data: { id: UUID }) {
     try {
       const { id } = data;
 
-      return await this.service.deleteById(id);
+      const deleted = await this.service.deleteById(id);
+      return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2003')
