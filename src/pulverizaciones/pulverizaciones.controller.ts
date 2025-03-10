@@ -208,7 +208,9 @@ export class PulverizacionesController {
       };
       await this.consumoProductosService.updateValores(CONSUMO_DATA);
 
-      const updated = await this.service.getById(data.pulverizacion_id);
+      const updated = await this.service.updatePulverizacion(
+        data.pulverizacion_id,
+      );
       return response.json(updated);
     } catch (error) {
       if (error instanceof Error) throw error;

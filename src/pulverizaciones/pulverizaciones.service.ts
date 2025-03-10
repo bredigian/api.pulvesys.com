@@ -47,6 +47,13 @@ export class PulverizacionesService {
     return await this.prisma.pulverizacion.create({ data });
   }
 
+  async updatePulverizacion(id: UUID) {
+    return await this.prisma.pulverizacion.update({
+      where: { id },
+      data: { updatedAt: new Date() },
+    });
+  }
+
   async deleteById(id: UUID) {
     return await this.prisma.pulverizacion.delete({ where: { id } });
   }
