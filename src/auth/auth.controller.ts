@@ -44,7 +44,10 @@ export class AuthController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async signup(@Body() payload: SignupDto, @Res() response: Response) {
     try {
-      const { contrasena } = payload;
+      const { contrasena, rol: payloadRol } = payload;
+      if (payloadRol === 'ADMIN')
+        throw new ForbiddenException('El rol recibido no está habilitado.');
+
       const hashedPassword = await this.hashService.generateHash(contrasena);
       const createdUser = await this.service.createUser({
         ...payload,
