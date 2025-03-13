@@ -5,6 +5,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   InternalServerErrorException,
   NotFoundException,
   Patch,
@@ -34,6 +35,7 @@ import { Aplicacion, ConsumoProducto } from '@prisma/client';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('pulverizaciones')
 export class PulverizacionesController {
@@ -46,14 +48,21 @@ export class PulverizacionesController {
     private readonly cultivosService: CultivosService,
     private readonly tratamientosService: TratamientosService,
     private readonly productosService: ProductosService,
+    private readonly jwtService: JwtService,
   ) {}
 
   @Get()
   @Version('1')
   @UseGuards(AuthGuard)
-  async getAll(@Res() response: Response) {
+  async getAll(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const data = await this.service.getPulverizaciones();
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const data = await this.service.getPulverizaciones(usuario_id);
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -67,14 +76,21 @@ export class PulverizacionesController {
   @Get('detalle')
   @Version('1')
   @UseGuards(AuthGuard)
-  async getById(@Res() response: Response, @Query('id') id: UUID) {
+  async getById(
+    @Res() response: Response,
+    @Query('id') id: UUID,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
       if (!id)
         throw new BadRequestException(
           'El ID es requerido para continuar con la solicitud.',
         );
 
-      const detalle = await this.service.getById(id);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const detalle = await this.service.getById(id, usuario_id);
       if (!detalle)
         throw new NotFoundException('La pulverización no fue encontrada.');
 
@@ -95,9 +111,17 @@ export class PulverizacionesController {
   async createPulverizacion(
     @Res() response: Response,
     @Body() data: PulverizacionDTO,
+    @Headers('Authorization') authorization: string,
   ) {
     try {
-      const campo = await this.camposService.findById(data?.detalle?.campo_id);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+
+      const campo = await this.camposService.findById(
+        data?.detalle?.campo_id,
+        usuario_id,
+      );
       if (!campo)
         throw new NotFoundException('El campo seleccionado no existe.');
 
@@ -113,12 +137,14 @@ export class PulverizacionesController {
 
       const cultivo = await this.cultivosService.findById(
         data?.detalle?.cultivo_id,
+        usuario_id,
       );
       if (!cultivo)
         throw new NotFoundException('El cultivo seleccionado no existe.');
 
       const tratamiento = await this.tratamientosService.findById(
         data?.detalle?.tratamiento_id,
+        usuario_id,
       );
 
       if (!tratamiento)
@@ -126,17 +152,22 @@ export class PulverizacionesController {
 
       const detalle = await this.detallesService.addDetalle(data.detalle);
       const pulverizacion = await this.service.createPulverizacion({
-        fecha: new Date(data.fecha).toISOString(),
+        id: undefined,
+        fecha: new Date(data.fecha),
         detalle_id: detalle.id as UUID,
+        usuario_id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
 
       for (let i = 0; i < data.productos.length; i++) {
         const aplicacion = data.productos[i];
         const exists = await this.productosService.findById(
           aplicacion?.producto_id,
+          usuario_id,
         );
         if (!exists) {
-          await this.service.deleteById(pulverizacion?.id as UUID);
+          await this.service.deleteById(pulverizacion?.id as UUID, usuario_id);
           await this.detallesService.deleteById(detalle?.id as UUID);
 
           throw new NotFoundException('El producto seleccionado no existe.');
@@ -177,6 +208,7 @@ export class PulverizacionesController {
   async editAplicacionConsumo(
     @Res() response: Response,
     @Body() data: AplicacionConConsumoDTO,
+    @Headers('Authorization') authorization: string,
   ) {
     try {
       const APLICACION_DATA: Aplicacion = {
@@ -188,7 +220,14 @@ export class PulverizacionesController {
       const aplicacionUpdated =
         await this.aplicacionesService.editAplicacion(APLICACION_DATA);
 
-      const pulverizacion = await this.service.getById(data.pulverizacion_id);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+
+      const pulverizacion = await this.service.getById(
+        data.pulverizacion_id,
+        usuario_id,
+      );
 
       const selectedHectareas = pulverizacion.detalle.campo.Lote.filter(
         (lote) => pulverizacion.detalle.lotes.includes(lote.nombre),
@@ -208,7 +247,10 @@ export class PulverizacionesController {
       };
       await this.consumoProductosService.updateValores(CONSUMO_DATA);
 
-      const updated = await this.service.getById(data.pulverizacion_id);
+      const updated = await this.service.getById(
+        data.pulverizacion_id,
+        usuario_id,
+      );
       return response.json(updated);
     } catch (error) {
       if (error instanceof Error) throw error;
@@ -223,11 +265,18 @@ export class PulverizacionesController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteById(@Res() response: Response, @Body() data: { id: UUID }) {
+  async deleteById(
+    @Res() response: Response,
+    @Body() data: { id: UUID },
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
       const { id } = data;
 
-      const deleted = await this.service.deleteById(id);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const deleted = await this.service.deleteById(id, usuario_id);
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

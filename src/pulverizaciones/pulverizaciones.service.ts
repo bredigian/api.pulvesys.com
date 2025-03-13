@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PulverizacionBaseDTO } from './pulverizaciones.dto';
 import { UUID } from 'crypto';
+import { Pulverizacion, Usuario } from '@prisma/client';
 
 @Injectable()
 export class PulverizacionesService {
   constructor(private prisma: PrismaService) {}
 
-  async getPulverizaciones() {
+  async getPulverizaciones(usuario_id: Usuario['id']) {
     return await this.prisma.pulverizacion.findMany({
+      where: { usuario_id },
       include: {
         detalle: {
           include: {
@@ -25,9 +26,9 @@ export class PulverizacionesService {
     });
   }
 
-  async getById(id: UUID) {
+  async getById(id: UUID, usuario_id: Usuario['id']) {
     return await this.prisma.pulverizacion.findUnique({
-      where: { id },
+      where: { id, usuario_id },
       include: {
         detalle: {
           include: {
@@ -43,11 +44,13 @@ export class PulverizacionesService {
     });
   }
 
-  async createPulverizacion(data: PulverizacionBaseDTO) {
+  async createPulverizacion(data: Pulverizacion) {
     return await this.prisma.pulverizacion.create({ data });
   }
 
-  async deleteById(id: UUID) {
-    return await this.prisma.pulverizacion.delete({ where: { id } });
+  async deleteById(id: UUID, usuario_id: Usuario['id']) {
+    return await this.prisma.pulverizacion.delete({
+      where: { id, usuario_id },
+    });
   }
 }

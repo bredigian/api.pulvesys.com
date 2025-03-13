@@ -1,9 +1,10 @@
 import { SesionesService } from 'src/sesiones/sesiones.service';
-import { AuthDto } from './auth.dto';
+import { AuthDto, SignupDto } from './auth.dto';
 import { AuthService } from './auth.service';
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   ForbiddenException,
@@ -23,6 +24,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Request, Response } from 'express';
 import { Hostname, TEnvironment } from 'src/types/environment.types';
+import { HashService } from 'src/lib/hash.service';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Controller('auth')
 export class AuthController {
@@ -33,7 +36,75 @@ export class AuthController {
     private readonly sesionesService: SesionesService,
     private readonly jwtService: JwtService,
     private readonly authService: AuthService,
+    private readonly hashService: HashService,
   ) {}
+
+  @Version('1')
+  @Post('signup')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async signup(@Body() payload: SignupDto, @Res() response: Response) {
+    try {
+      const { contrasena } = payload;
+      const hashedPassword = await this.hashService.generateHash(contrasena);
+      const createdUser = await this.service.createUser({
+        ...payload,
+        contrasena: hashedPassword,
+      });
+
+      const { id, nombre, nombre_usuario, apellido, rol } = createdUser;
+      const { access_token, refresh_token } =
+        await this.authService.generateTokens(id);
+
+      const { expireIn } = await this.sesionesService.createSesion(
+        access_token,
+        refresh_token,
+        id,
+      );
+
+      const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
+      const domain = Hostname[ENVIRONMENT];
+
+      response.cookie('refresh_token', refresh_token, {
+        httpOnly: true,
+        secure: true,
+        expires: new Date(expireIn), // 15 dias
+        sameSite: 'none',
+        domain,
+      });
+      response.cookie('access_token', access_token, {
+        expires: new Date(expireIn), // 15 dias
+        domain,
+      });
+      response.cookie(
+        'userdata',
+        JSON.stringify({ nombre_usuario, nombre, apellido, rol }),
+        {
+          expires: new Date(expireIn), // 15 dias
+          domain,
+        },
+      );
+
+      return response.json({
+        access_token,
+        expireIn,
+        userdata: { nombre_usuario, nombre, apellido },
+      });
+    } catch (e) {
+      if (e) {
+        if (e instanceof PrismaClientKnownRequestError) {
+          if (e.code === 'P2002')
+            throw new ConflictException('El usuario ya existe.');
+          throw e;
+        }
+
+        throw e;
+      }
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
 
   @Version('1')
   @Post('signin')

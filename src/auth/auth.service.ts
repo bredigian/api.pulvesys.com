@@ -14,6 +14,10 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  async createUser(data: Partial<Usuario>) {
+    return await this.prisma.usuario.create({ data: data as Usuario });
+  }
+
   async findByUsername(nombre_usuario: Usuario['nombre_usuario']) {
     return await this.prisma.usuario.findUnique({ where: { nombre_usuario } });
   }

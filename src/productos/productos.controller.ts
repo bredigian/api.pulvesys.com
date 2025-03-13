@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   InternalServerErrorException,
   Post,
   Put,
@@ -20,17 +21,27 @@ import { UUID } from 'crypto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('productos')
 export class ProductosController {
-  constructor(private readonly service: ProductosService) {}
+  constructor(
+    private readonly service: ProductosService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   @Get()
   @Version('1')
   @UseGuards(AuthGuard)
-  async getAll(@Res() response: Response) {
+  async getAll(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const data = await this.service.getAll();
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const data = await this.service.getAll(usuario_id);
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -45,9 +56,17 @@ export class ProductosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async addProducto(@Res() response: Response, @Body() data: ProductoDTO) {
+  async addProducto(
+    @Res() response: Response,
+    @Body() data: ProductoDTO,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const producto = await this.service.addProducto(data);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const producto = await this.service.addProducto({ ...data, usuario_id });
+
       return response.json(producto);
     } catch (error) {
       if (error) throw error;
@@ -65,9 +84,14 @@ export class ProductosController {
   async editProducto(
     @Res() response: Response,
     @Body() data: ProductoStrictDTO,
+    @Headers('Authorization') authorization: string,
   ) {
     try {
-      const updated = await this.service.editProducto(data);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+
+      const updated = await this.service.editProducto(data, usuario_id);
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -82,11 +106,18 @@ export class ProductosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteById(@Res() response: Response, @Body() data: { id: UUID }) {
+  async deleteById(
+    @Res() response: Response,
+    @Body() data: { id: UUID },
+    @Headers('Authorizatio') authorization: string,
+  ) {
     try {
       const { id } = data;
 
-      const deleted = await this.service.deleteById(id);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const deleted = await this.service.deleteById(id, usuario_id);
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
