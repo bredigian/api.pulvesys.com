@@ -2,6 +2,9 @@ name: PulveSys Beta API CI/CD
 on:
   push:
     branches: ['develop']
+defaults:
+  run:
+    working-directory: ./develop
 jobs:
   build_run:
     runs-on: self-hosted
