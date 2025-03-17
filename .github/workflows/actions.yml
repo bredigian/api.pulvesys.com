@@ -34,7 +34,7 @@ jobs:
         run: pnpm i
         working-directory: ./main
       - name: Sync database
-        run: pnpx prisma migrate dev
+        run: pnpx prisma migrate deploy
         working-directory: ./main
       - name: Build API
         run: pnpm run build
