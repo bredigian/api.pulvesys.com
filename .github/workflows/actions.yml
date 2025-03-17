@@ -9,16 +9,14 @@ jobs:
       DATABASE_URL: ${{secrets.PRODUCTION_DATABASE_URL}}
       JWT_SECRET_KEY: ${{secrets.JWT_SECRET_KEY}}
       PORT: ${{secrets.PRODUCTION_PORT}}
-      MAIN_WORKING_DIRECTORY: ${{secrets.MAIN_WORKING_DIRECTORY}}
       NODE_ENV: 'production'
-    defaults:
-      run:
-        working-directory: ${{env.MAIN_WORKING_DIRECTORY}}
     strategy:
       matrix:
         node-version: [22.x]
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: main
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.1.0
         with:
