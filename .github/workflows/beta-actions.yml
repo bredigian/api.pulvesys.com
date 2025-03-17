@@ -4,7 +4,7 @@ on:
     branches: ['develop']
 defaults:
   run:
-    working-directory: ./beta
+    working-directory: ./develop_branch
 jobs:
   build_run:
     runs-on: self-hosted
