@@ -4,7 +4,7 @@ on:
     branches: ['develop']
 defaults:
   run:
-    working-directory: ./beta
+    working-directory: ./develop
 jobs:
   build_run:
     runs-on: self-hosted
@@ -18,6 +18,8 @@ jobs:
         node-version: [22.x]
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: develop
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.1.0
         with:

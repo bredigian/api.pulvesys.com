@@ -18,6 +18,8 @@ jobs:
         node-version: [22.x]
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: main
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.1.0
         with:
