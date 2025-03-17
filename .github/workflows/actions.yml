@@ -2,9 +2,6 @@ name: PulveSys API CI/CD
 on:
   push:
     branches: ['main']
-defaults:
-  run:
-    working-directory: ./main
 jobs:
   build_run:
     runs-on: self-hosted
@@ -31,9 +28,12 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm i
+        working-directory: ./main
       - name: Sync database
         run: pnpx prisma migrate deploy
+        working-directory: ./main
       - name: Build API
         run: pnpm run build
+        working-directory: ./main
       - name: Reload proxy server
         run: pm2 reload api.pulvesys.com --update-env
