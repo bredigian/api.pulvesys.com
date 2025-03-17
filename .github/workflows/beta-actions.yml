@@ -2,9 +2,6 @@ name: PulveSys Beta API CI/CD
 on:
   push:
     branches: ['develop']
-defaults:
-  run:
-    working-directory: ./develop_branch
 jobs:
   build_run:
     runs-on: self-hosted
@@ -13,6 +10,9 @@ jobs:
       JWT_SECRET_KEY: ${{secrets.JWT_SECRET_KEY}}
       PORT: ${{secrets.DEVELOPMENT_PORT}}
       NODE_ENV: 'beta'
+    defaults:
+      run:
+        working-directory: develop_branch
     strategy:
       matrix:
         node-version: [22.x]
