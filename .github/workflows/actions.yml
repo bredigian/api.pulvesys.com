@@ -2,6 +2,9 @@ name: PulveSys API CI/CD
 on:
   push:
     branches: ['main']
+defaults:
+  run:
+    working-directory: ./main
 jobs:
   build_run:
     runs-on: self-hosted
@@ -26,6 +29,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
+          cache-dependency-path: ./main
       - name: Install dependencies
         run: pnpm i
         working-directory: ./main
