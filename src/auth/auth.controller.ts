@@ -239,38 +239,19 @@ export class AuthController {
 
           updatedAccessToken = updated_access_token;
           updatedRefreshToken = updated_refresh_token;
-          updatedExpireIn = new Date(updated_expire_in);
+          updatedExpireIn = updated_expire_in;
         }
       }
 
       const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
       const domain = Hostname[ENVIRONMENT];
 
-      response.cookie('refresh_token', refresh_token, {
-        httpOnly: true,
-        secure: true,
-        expires: updatedExpireIn, // 15 dias
-        sameSite: 'none',
-        domain,
-      });
-      response.cookie('access_token', access_token, {
-        expires: updatedExpireIn, // 15 dias
-        domain,
-      });
-      response.cookie(
-        'userdata',
-        JSON.stringify({ nombre_usuario, nombre, apellido }),
-        {
-          expires: updatedExpireIn, // 15 dias
-          domain,
-        },
-      );
-
       return response.json({
         access_token: updatedAccessToken,
         refresh_token: updatedRefreshToken,
         expireIn: updatedExpireIn,
         userdata: { nombre_usuario, nombre, apellido },
+        domain,
       });
     } catch (e) {
       if (e) {
@@ -289,6 +270,7 @@ export class AuthController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async signout(
     @Req() request: Request,
+    @Res() response: Response,
     @Headers('Authorization') authorization: string,
   ) {
     try {
@@ -303,11 +285,14 @@ export class AuthController {
         throw new UnauthorizedException(
           'Los tokens de autenticación son requeridos.',
         );
+      const deletedSession =
+        await this.sesionesService.deleteSessionByAccessToken(access_token);
 
-      return await this.sesionesService.deleteSessionByTokens(
-        access_token,
-        refresh_token,
-      );
+      response.clearCookie('access_token');
+      response.clearCookie('refresh_token');
+      response.clearCookie('userdata');
+
+      return response.json(deletedSession);
     } catch (e) {
       if (e) {
         console.error(e);

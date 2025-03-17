@@ -1,7 +1,8 @@
+import { Pulverizacion, Usuario } from '@prisma/client';
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UUID } from 'crypto';
-import { Pulverizacion, Usuario } from '@prisma/client';
 
 @Injectable()
 export class PulverizacionesService {
@@ -22,7 +23,7 @@ export class PulverizacionesService {
         ConsumoProducto: true,
         productos: true,
       },
-      orderBy: { fecha: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -46,6 +47,13 @@ export class PulverizacionesService {
 
   async createPulverizacion(data: Pulverizacion) {
     return await this.prisma.pulverizacion.create({ data });
+  }
+
+  async updatePulverizacion(id: UUID) {
+    return await this.prisma.pulverizacion.update({
+      where: { id },
+      data: { updatedAt: new Date() },
+    });
   }
 
   async deleteById(id: UUID, usuario_id: Usuario['id']) {
