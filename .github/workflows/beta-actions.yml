@@ -9,10 +9,11 @@ jobs:
       DATABASE_URL: ${{secrets.DEVELOPMENT_DATABASE_URL}}
       JWT_SECRET_KEY: ${{secrets.JWT_SECRET_KEY}}
       PORT: ${{secrets.DEVELOPMENT_PORT}}
+      DEVELOP_WORKING_DIRECTORY: ${{secrets.DEVELOP_WORKING_DIRECTORY}}
       NODE_ENV: 'beta'
     defaults:
       run:
-        working-directory: develop_branch
+        working-directory: ${{env.DEVELOP_WORKING_DIRECTORY}}
     strategy:
       matrix:
         node-version: [22.x]

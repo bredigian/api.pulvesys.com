@@ -9,10 +9,11 @@ jobs:
       DATABASE_URL: ${{secrets.PRODUCTION_DATABASE_URL}}
       JWT_SECRET_KEY: ${{secrets.JWT_SECRET_KEY}}
       PORT: ${{secrets.PRODUCTION_PORT}}
+      MAIN_WORKING_DIRECTORY: ${{secrets.MAIN_WORKING_DIRECTORY}}
       NODE_ENV: 'production'
     defaults:
       run:
-        working-directory: main_branch
+        working-directory: ${{env.MAIN_WORKING_DIRECTORY}}
     strategy:
       matrix:
         node-version: [22.x]
@@ -30,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: pnpm i
       - name: Sync database
-        run: pnpx prisma migrate dev
+        run: pnpx prisma migrate deploy
       - name: Build API
         run: pnpm run build
       - name: Reload proxy server
