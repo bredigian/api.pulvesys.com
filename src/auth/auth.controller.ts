@@ -90,7 +90,7 @@ export class AuthController {
       return response.json({
         access_token,
         expireIn,
-        userdata: { nombre_usuario, nombre, apellido },
+        userdata: { nombre_usuario, nombre, apellido, rol },
       });
     } catch (e) {
       if (e) {
@@ -129,7 +129,7 @@ export class AuthController {
       if (!matchPassword)
         throw new UnauthorizedException('Las credenciales son incorrectas.');
 
-      const { id, nombre, apellido } = exists;
+      const { id, nombre, apellido, rol } = exists;
 
       await this.sesionesService.clearExpiredSesiones(id);
 
@@ -164,7 +164,7 @@ export class AuthController {
       });
       response.cookie(
         'userdata',
-        JSON.stringify({ nombre_usuario, nombre, apellido }),
+        JSON.stringify({ nombre_usuario, nombre, apellido, rol }),
         {
           expires: new Date(expireIn), // 15 dias
           domain,
@@ -174,7 +174,7 @@ export class AuthController {
       return response.json({
         access_token,
         expireIn,
-        userdata: { nombre_usuario, nombre, apellido },
+        userdata: { nombre_usuario, nombre, apellido, rol },
       });
     } catch (e) {
       if (e) throw e;
@@ -208,7 +208,7 @@ export class AuthController {
         throw new NotFoundException('La sesión no existe o ya expiró.');
 
       const { access_token, refresh_token, expireIn, usuario } = session;
-      const { nombre, nombre_usuario, apellido } = usuario;
+      const { nombre, nombre_usuario, apellido, rol } = usuario;
 
       let updatedAccessToken = access_token;
       let updatedRefreshToken = refresh_token;
@@ -250,7 +250,7 @@ export class AuthController {
         access_token: updatedAccessToken,
         refresh_token: updatedRefreshToken,
         expireIn: updatedExpireIn,
-        userdata: { nombre_usuario, nombre, apellido },
+        userdata: { nombre_usuario, nombre, apellido, rol },
         domain,
       });
     } catch (e) {

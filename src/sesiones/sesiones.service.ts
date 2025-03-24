@@ -1,14 +1,14 @@
-import { Sesion, Usuario } from '@prisma/client';
-
-import { DateTime } from 'luxon';
 import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Sesion, Usuario } from '@prisma/client';
+import { UUID, randomUUID } from 'node:crypto';
+
+import { DateTime } from 'luxon';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { randomUUID, UUID } from 'node:crypto';
 import { Tokens } from 'src/types/auth.types';
 
 @Injectable()
@@ -25,7 +25,12 @@ export class SesionesService {
       where: { access_token },
       include: {
         usuario: {
-          select: { nombre_usuario: true, nombre: true, apellido: true },
+          select: {
+            nombre_usuario: true,
+            nombre: true,
+            apellido: true,
+            rol: true,
+          },
         },
       },
     });
