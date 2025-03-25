@@ -17,4 +17,8 @@ export class UsuariosService {
   async findByUsername(nombre_usuario: Usuario['nombre_usuario']) {
     return await this.prisma.usuario.findUnique({ where: { nombre_usuario } });
   }
+
+  async findById(id: Usuario['id']) {
+    return await this.prisma.usuario.findUnique({ where: { id } });
+  }
 }

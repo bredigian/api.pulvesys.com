@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -21,12 +22,14 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Controller('cultivos')
 export class CultivosController {
   constructor(
     private readonly service: CultivosService,
     private readonly jwtService: JwtService,
+    private readonly usuariosService: UsuariosService,
   ) {}
 
   @Get()
@@ -40,7 +43,12 @@ export class CultivosController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const data = await this.service.getAll(usuario_id);
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const data = await this.service.getAll(
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -64,7 +72,13 @@ export class CultivosController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const cultivo = await this.service.addCultivo({ ...data, usuario_id });
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const cultivo = await this.service.addCultivo({
+        ...data,
+        usuario_id: rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      });
 
       return response.json(cultivo);
     } catch (error) {
@@ -89,7 +103,13 @@ export class CultivosController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const updated = await this.service.editCultivo(data, usuario_id);
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const updated = await this.service.editCultivo(
+        data,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -110,12 +130,18 @@ export class CultivosController {
     @Headers('Authorization') authorization: string,
   ) {
     try {
-      const { id } = data;
+      const { id: cultivo_id } = data;
 
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const deleted = await this.service.deleteById(id, usuario_id);
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const deleted = await this.service.deleteById(
+        cultivo_id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
