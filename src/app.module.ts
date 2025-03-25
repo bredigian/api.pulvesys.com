@@ -1,19 +1,20 @@
 import { AplicacionesModule } from './aplicaciones/aplicaciones.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { CamposModule } from './campos/campos.module';
 import { ConfigModule } from '@nestjs/config';
 import { ConsumoProductoModule } from './consumo-producto/consumo-producto.module';
+import { CoordinadasModule } from './coordinadas/coordinadas.module';
 import { CultivosModule } from './cultivos/cultivos.module';
 import { DetallesModule } from './detalles/detalles.module';
+import { LotesModule } from './lotes/lotes.module';
 import { Module } from '@nestjs/common';
 import { ProductosModule } from './productos/productos.module';
 import { PulverizacionesModule } from './pulverizaciones/pulverizaciones.module';
-import { TratamientosModule } from './tratamientos/tratamientos.module';
-import { LotesModule } from './lotes/lotes.module';
-import { CoordinadasModule } from './coordinadas/coordinadas.module';
-import { AuthModule } from './auth/auth.module';
 import { SesionesModule } from './sesiones/sesiones.module';
+import { TratamientosModule } from './tratamientos/tratamientos.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { SesionesModule } from './sesiones/sesiones.module';
     CoordinadasModule,
     AuthModule,
     SesionesModule,
+    UsuariosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

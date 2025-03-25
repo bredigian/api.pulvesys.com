@@ -123,6 +123,7 @@ enum USUARIO_ROL {
 
 model Usuario {
   id              String            @id @unique @default(uuid())
+  empresa_id      String?
   nombre_usuario  String            @unique
   email           String            @unique
   contrasena      String

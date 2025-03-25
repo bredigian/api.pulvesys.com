@@ -26,6 +26,7 @@ import { Request, Response } from 'express';
 import { Hostname, TEnvironment } from 'src/types/environment.types';
 import { HashService } from 'src/lib/hash.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Controller('auth')
 export class AuthController {
@@ -34,6 +35,7 @@ export class AuthController {
   constructor(
     private readonly service: AuthService,
     private readonly sesionesService: SesionesService,
+    private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
     private readonly authService: AuthService,
     private readonly hashService: HashService,
@@ -49,7 +51,7 @@ export class AuthController {
         throw new ForbiddenException('El rol recibido no está habilitado.');
 
       const hashedPassword = await this.hashService.generateHash(contrasena);
-      const createdUser = await this.service.createUser({
+      const createdUser = await this.usuariosService.createUser({
         ...payload,
         contrasena: hashedPassword,
       });
@@ -119,7 +121,7 @@ export class AuthController {
   ) {
     try {
       const { nombre_usuario, contrasena } = payload;
-      const exists = await this.service.findByUsername(nombre_usuario);
+      const exists = await this.usuariosService.findByUsername(nombre_usuario);
       if (!exists) throw new BadRequestException('El usuario no existe.');
 
       const matchPassword = await this.service.verifyPassword(
