@@ -5,6 +5,7 @@ import { LotesService } from 'src/lotes/lotes.service';
 import { Module } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SesionesService } from 'src/sesiones/sesiones.service';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Module({
   controllers: [CamposController],
@@ -14,6 +15,7 @@ import { SesionesService } from 'src/sesiones/sesiones.service';
     LotesService,
     CoordinadasService,
     SesionesService,
+    UsuariosService,
   ],
 })
 export class CamposModule {}

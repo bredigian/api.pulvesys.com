@@ -25,6 +25,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Controller('campos')
 export class CamposController {
@@ -32,6 +33,7 @@ export class CamposController {
     private readonly service: CamposService,
     private readonly lotesService: LotesService,
     private readonly coordinadaService: CoordinadasService,
+    private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -46,7 +48,12 @@ export class CamposController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const data = await this.service.getAll(usuario_id);
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const data = await this.service.getAll(
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -70,11 +77,13 @@ export class CamposController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization.substring(7),
       );
-      console.log(usuario_id);
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
       const campo = await this.service.addCampo({
         id: undefined,
         nombre: data.nombre,
-        usuario_id,
+        usuario_id: rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       });
 
       const { Lote } = data;
@@ -118,8 +127,14 @@ export class CamposController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
 
-      await this.service.editCampo(data, usuario_id);
+      await this.service.editCampo(
+        data,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
       const { Lote } = data;
       for (const lote of Lote) {
         if ('id' in lote) {
@@ -148,7 +163,10 @@ export class CamposController {
         }
       }
 
-      const updated = await this.service.findById(data.id, usuario_id);
+      const updated = await this.service.findById(
+        data.id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -169,12 +187,18 @@ export class CamposController {
     @Headers('Authorization') authorization: string,
   ) {
     try {
-      const { id } = data;
+      const { id: campo_id } = data;
 
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const deleted = await this.service.deleteById(id, usuario_id);
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const deleted = await this.service.deleteById(
+        campo_id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
