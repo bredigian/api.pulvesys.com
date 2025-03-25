@@ -31,11 +31,12 @@ import { CultivosService } from 'src/cultivos/cultivos.service';
 import { TratamientosService } from 'src/tratamientos/tratamientos.service';
 import { ProductosService } from 'src/productos/productos.service';
 import { AplicacionConConsumoDTO } from 'src/aplicaciones/aplicaciones.dto';
-import { Aplicacion, ConsumoProducto } from '@prisma/client';
+import { Aplicacion, ConsumoProducto, Pulverizacion } from '@prisma/client';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Controller('pulverizaciones')
 export class PulverizacionesController {
@@ -48,6 +49,7 @@ export class PulverizacionesController {
     private readonly cultivosService: CultivosService,
     private readonly tratamientosService: TratamientosService,
     private readonly productosService: ProductosService,
+    private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -62,7 +64,14 @@ export class PulverizacionesController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const data = await this.service.getPulverizaciones(usuario_id);
+      const { id, rol } = await this.usuariosService.findById(usuario_id);
+
+      if (rol === 'EMPRESA') {
+        const data = await this.service.getPulverizacionesByEmpresa(id);
+        return response.json(data);
+      }
+
+      const data = await this.service.getPulverizaciones(id);
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -78,11 +87,11 @@ export class PulverizacionesController {
   @UseGuards(AuthGuard)
   async getById(
     @Res() response: Response,
-    @Query('id') id: UUID,
+    @Query('id') pulverizacion_id: UUID,
     @Headers('Authorization') authorization: string,
   ) {
     try {
-      if (!id)
+      if (!pulverizacion_id)
         throw new BadRequestException(
           'El ID es requerido para continuar con la solicitud.',
         );
@@ -90,7 +99,13 @@ export class PulverizacionesController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const detalle = await this.service.getById(id, usuario_id);
+      const { id, rol } = await this.usuariosService.findById(usuario_id);
+
+      const detalle =
+        rol === 'EMPRESA'
+          ? await this.service.getByIdByEmpresa(pulverizacion_id, id)
+          : await this.service.getById(pulverizacion_id, id);
+
       if (!detalle)
         throw new NotFoundException('La pulverización no fue encontrada.');
 
@@ -117,10 +132,12 @@ export class PulverizacionesController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
 
       const campo = await this.camposService.findById(
         data?.detalle?.campo_id,
-        usuario_id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
       if (!campo)
         throw new NotFoundException('El campo seleccionado no existe.');
@@ -137,14 +154,14 @@ export class PulverizacionesController {
 
       const cultivo = await this.cultivosService.findById(
         data?.detalle?.cultivo_id,
-        usuario_id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
       if (!cultivo)
         throw new NotFoundException('El cultivo seleccionado no existe.');
 
       const tratamiento = await this.tratamientosService.findById(
         data?.detalle?.tratamiento_id,
-        usuario_id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
 
       if (!tratamiento)
@@ -155,7 +172,7 @@ export class PulverizacionesController {
         id: undefined,
         fecha: new Date(data.fecha),
         detalle_id: detalle.id as UUID,
-        usuario_id,
+        usuario_id: id,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -164,10 +181,13 @@ export class PulverizacionesController {
         const aplicacion = data.productos[i];
         const exists = await this.productosService.findById(
           aplicacion?.producto_id,
-          usuario_id,
+          rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
         );
         if (!exists) {
-          await this.service.deleteById(pulverizacion?.id as UUID, usuario_id);
+          await this.service.deleteById(
+            pulverizacion?.id as UUID,
+            rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+          );
           await this.detallesService.deleteById(detalle?.id as UUID);
 
           throw new NotFoundException('El producto seleccionado no existe.');
@@ -224,10 +244,15 @@ export class PulverizacionesController {
         authorization?.substring(7),
       );
 
-      const pulverizacion = await this.service.getById(
-        data.pulverizacion_id,
-        usuario_id,
-      );
+      const { id, rol } = await this.usuariosService.findById(usuario_id);
+
+      const pulverizacion =
+        rol === 'EMPRESA'
+          ? await this.service.getByIdByEmpresa(data.pulverizacion_id, id)
+          : await this.service.getById(data.pulverizacion_id, id);
+
+      if (!pulverizacion)
+        throw new NotFoundException('No se encontró la pulverización');
 
       const selectedHectareas = pulverizacion.detalle.campo.Lote.filter(
         (lote) => pulverizacion.detalle.lotes.includes(lote.nombre),
@@ -247,10 +272,10 @@ export class PulverizacionesController {
       };
       await this.consumoProductosService.updateValores(CONSUMO_DATA);
 
-      const updated = await this.service.getById(
-        data.pulverizacion_id,
-        usuario_id,
-      );
+      const updated =
+        rol === 'EMPRESA'
+          ? await this.service.getByIdByEmpresa(data.pulverizacion_id, id)
+          : await this.service.getById(data.pulverizacion_id, id);
       return response.json(updated);
     } catch (error) {
       if (error instanceof Error) throw error;
@@ -271,12 +296,17 @@ export class PulverizacionesController {
     @Headers('Authorization') authorization: string,
   ) {
     try {
-      const { id } = data;
+      const { id: pulverizacion_id } = data;
 
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const deleted = await this.service.deleteById(id, usuario_id);
+      const { id, rol } = await this.usuariosService.findById(usuario_id);
+
+      const deleted =
+        rol === 'EMPRESA'
+          ? await this.service.deleteByEmpresaById(pulverizacion_id, id)
+          : await this.service.deleteById(pulverizacion_id, usuario_id);
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

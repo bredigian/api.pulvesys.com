@@ -27,7 +27,44 @@ export class PulverizacionesService {
     });
   }
 
-  async getById(id: UUID, usuario_id: Usuario['id']) {
+  async getPulverizacionesByEmpresa(empresa_id: Usuario['id']) {
+    const dataByEmployers = await this.prisma.pulverizacion.findMany({
+      where: { usuario: { empresa_id } },
+      include: {
+        detalle: {
+          include: {
+            campo: { include: { Lote: true } },
+            cultivo: true,
+            tratamiento: true,
+          },
+        },
+        usuario: {
+          select: {
+            id: true,
+            empresa_id: true,
+            nombre: true,
+            apellido: true,
+            rol: true,
+          },
+        },
+        Aplicacion: { include: { producto: true } },
+        ConsumoProducto: true,
+        productos: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const dataByMySelf = await this.getPulverizaciones(empresa_id);
+
+    const sortedData = [...dataByEmployers, ...dataByMySelf].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    return sortedData;
+  }
+
+  async getById(id: Pulverizacion['id'], usuario_id: Usuario['id']) {
     return await this.prisma.pulverizacion.findUnique({
       where: { id, usuario_id },
       include: {
@@ -45,6 +82,39 @@ export class PulverizacionesService {
     });
   }
 
+  async getByIdByEmpresa(id: Pulverizacion['id'], empresa_id: Usuario['id']) {
+    const data = await this.prisma.pulverizacion.findUnique({
+      where: {
+        id,
+        usuario: { empresa_id },
+      },
+      include: {
+        detalle: {
+          include: {
+            campo: { include: { Lote: { include: { Coordinada: true } } } },
+            cultivo: true,
+            tratamiento: true,
+          },
+        },
+        usuario: {
+          select: {
+            id: true,
+            empresa_id: true,
+            nombre: true,
+            apellido: true,
+            rol: true,
+          },
+        },
+        Aplicacion: { include: { producto: true } },
+        ConsumoProducto: true,
+        productos: true,
+      },
+    });
+    if (!data) return await this.getById(id, empresa_id);
+
+    return data;
+  }
+
   async createPulverizacion(data: Pulverizacion) {
     return await this.prisma.pulverizacion.create({ data });
   }
@@ -56,9 +126,21 @@ export class PulverizacionesService {
     });
   }
 
-  async deleteById(id: UUID, usuario_id: Usuario['id']) {
+  async deleteById(id: Pulverizacion['id'], usuario_id: Usuario['id']) {
     return await this.prisma.pulverizacion.delete({
       where: { id, usuario_id },
     });
+  }
+
+  async deleteByEmpresaById(
+    id: Pulverizacion['id'],
+    empresa_id: Usuario['id'],
+  ) {
+    const deleted = await this.prisma.pulverizacion.delete({
+      where: { id, usuario: { empresa_id } },
+    });
+    if (!deleted) return await this.deleteById(id, empresa_id);
+
+    return deleted;
   }
 }

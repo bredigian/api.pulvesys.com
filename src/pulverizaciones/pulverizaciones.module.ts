@@ -8,8 +8,9 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductosService } from 'src/productos/productos.service';
 import { PulverizacionesController } from './pulverizaciones.controller';
 import { PulverizacionesService } from './pulverizaciones.service';
-import { TratamientosService } from 'src/tratamientos/tratamientos.service';
 import { SesionesService } from 'src/sesiones/sesiones.service';
+import { TratamientosService } from 'src/tratamientos/tratamientos.service';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Module({
   controllers: [PulverizacionesController],
@@ -24,6 +25,7 @@ import { SesionesService } from 'src/sesiones/sesiones.service';
     ProductosService,
     PrismaService,
     SesionesService,
+    UsuariosService,
   ],
 })
 export class PulverizacionesModule {}

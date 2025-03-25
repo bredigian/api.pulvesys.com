@@ -44,7 +44,6 @@ export class UsuariosController {
       );
 
       const data = await this.service.getAllByEmpresaId(empresa_id);
-      console.log(data);
       return response.json(data);
     } catch (e) {
       if (e) throw e;
