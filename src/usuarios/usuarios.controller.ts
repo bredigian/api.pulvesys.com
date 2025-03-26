@@ -21,6 +21,8 @@ import { SignupDto } from 'src/auth/auth.dto';
 import { HashService } from 'src/lib/hash.service';
 import { AuthService } from 'src/auth/auth.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { HistorialService } from 'src/historial/historial.service';
+import { Log } from '@prisma/client';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -29,6 +31,7 @@ export class UsuariosController {
     private readonly authService: AuthService,
     private readonly jwtService: JwtService,
     private readonly hashService: HashService,
+    private readonly logService: HistorialService,
   ) {}
 
   @Get('empresa')
@@ -76,6 +79,16 @@ export class UsuariosController {
         contrasena: hashedPassword,
         empresa_id,
       });
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: empresa_id,
+        type: 'USUARIO',
+        description: `Se registró un nuevo usuario a nombre de ${createdUser.nombre} ${createdUser.apellido}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
 
       return response.json(createdUser);
     } catch (e) {

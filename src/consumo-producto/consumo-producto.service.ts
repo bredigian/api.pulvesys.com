@@ -15,6 +15,9 @@ export class ConsumoProductoService {
     return await this.prisma.consumoProducto.update({
       where: { id: data.id },
       data,
+      include: {
+        producto: true,
+      },
     });
   }
 }

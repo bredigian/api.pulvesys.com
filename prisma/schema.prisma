@@ -137,6 +137,7 @@ model Usuario {
   Producto        Producto[]
   Campo           Campo[]
   Cultivo         Cultivo[]
+  Log             Log[]
 }
 
 model Sesion {
@@ -148,4 +149,23 @@ model Sesion {
   createdAt     DateTime @default(now())
   expireIn      DateTime
   updatedAt     DateTime @updatedAt
+}
+
+enum LOG {
+  PULVERIZACION
+  PRODUCTO
+  CULTIVO
+  TRATAMIENTO
+  UBICACION
+  USUARIO
+  SUSCRIPCION
+}
+
+model Log {
+  id          String   @id @unique @default(uuid())
+  type        LOG
+  description String
+  usuario_id  String?
+  usuario     Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
 }

@@ -15,6 +15,7 @@ import { PulverizacionesModule } from './pulverizaciones/pulverizaciones.module'
 import { SesionesModule } from './sesiones/sesiones.module';
 import { TratamientosModule } from './tratamientos/tratamientos.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
+import { HistorialModule } from './historial/historial.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     AuthModule,
     SesionesModule,
     UsuariosModule,
+    HistorialModule,
   ],
   controllers: [AppController],
   providers: [AppService],

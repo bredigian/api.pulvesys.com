@@ -23,6 +23,8 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { Log } from '@prisma/client';
+import { HistorialService } from 'src/historial/historial.service';
 
 @Controller('productos')
 export class ProductosController {
@@ -30,6 +32,7 @@ export class ProductosController {
     private readonly service: ProductosService,
     private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
+    private readonly logService: HistorialService,
   ) {}
 
   @Get()
@@ -79,6 +82,17 @@ export class ProductosController {
         ...data,
         usuario_id: rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       });
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'PRODUCTO',
+        description: `Se agregó el producto ${producto.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(producto);
     } catch (error) {
       if (error) throw error;
@@ -109,6 +123,17 @@ export class ProductosController {
         data,
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'PRODUCTO',
+        description: `Se modificó el producto ${updated.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -126,7 +151,7 @@ export class ProductosController {
   async deleteById(
     @Res() response: Response,
     @Body() data: { id: UUID },
-    @Headers('Authorizatio') authorization: string,
+    @Headers('Authorization') authorization: string,
   ) {
     try {
       const { id: producto_id } = data;
@@ -141,6 +166,17 @@ export class ProductosController {
         producto_id,
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'PRODUCTO',
+        description: `Se eliminó el producto ${deleted.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

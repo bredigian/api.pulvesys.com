@@ -23,6 +23,8 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { HistorialService } from 'src/historial/historial.service';
+import { Log } from '@prisma/client';
 
 @Controller('tratamientos')
 export class TratamientosController {
@@ -30,6 +32,7 @@ export class TratamientosController {
     private readonly service: TratamientosService,
     private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
+    private readonly logService: HistorialService,
   ) {}
 
   @Get()
@@ -79,6 +82,17 @@ export class TratamientosController {
         ...data,
         usuario_id: rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       });
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'TRATAMIENTO',
+        description: `Se agregó el tipo de tratamiento ${tratamiento.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(tratamiento);
     } catch (error) {
       if (error) throw error;
@@ -109,6 +123,17 @@ export class TratamientosController {
         data,
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'TRATAMIENTO',
+        description: `Se modificó el tipo de tratamiento ${updated.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -141,6 +166,17 @@ export class TratamientosController {
         tratamiento_id,
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'TRATAMIENTO',
+        description: `Se eliminó el tipo de tratamiento ${deleted.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

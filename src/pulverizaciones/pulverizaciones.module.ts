@@ -3,6 +3,7 @@ import { CamposService } from 'src/campos/campos.service';
 import { ConsumoProductoService } from 'src/consumo-producto/consumo-producto.service';
 import { CultivosService } from 'src/cultivos/cultivos.service';
 import { DetallesService } from 'src/detalles/detalles.service';
+import { HistorialService } from 'src/historial/historial.service';
 import { Module } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductosService } from 'src/productos/productos.service';
@@ -26,6 +27,7 @@ import { UsuariosService } from 'src/usuarios/usuarios.service';
     PrismaService,
     SesionesService,
     UsuariosService,
+    HistorialService,
   ],
 })
 export class PulverizacionesModule {}

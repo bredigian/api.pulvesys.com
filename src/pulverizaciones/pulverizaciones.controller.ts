@@ -31,12 +31,19 @@ import { CultivosService } from 'src/cultivos/cultivos.service';
 import { TratamientosService } from 'src/tratamientos/tratamientos.service';
 import { ProductosService } from 'src/productos/productos.service';
 import { AplicacionConConsumoDTO } from 'src/aplicaciones/aplicaciones.dto';
-import { Aplicacion, ConsumoProducto, Pulverizacion } from '@prisma/client';
+import {
+  Aplicacion,
+  ConsumoProducto,
+  Log,
+  Pulverizacion,
+} from '@prisma/client';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { HistorialService } from 'src/historial/historial.service';
+import { DateTime } from 'luxon';
 
 @Controller('pulverizaciones')
 export class PulverizacionesController {
@@ -51,6 +58,7 @@ export class PulverizacionesController {
     private readonly productosService: ProductosService,
     private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
+    private readonly logService: HistorialService,
   ) {}
 
   @Get()
@@ -211,6 +219,16 @@ export class PulverizacionesController {
         await this.consumoProductosService.createConsumo(consumo_payload);
       }
 
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'PULVERIZACION',
+        description: `Se registró una nueva pulverización para la ubicación ${campo.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(pulverizacion);
     } catch (error) {
       if (error instanceof Error) throw error;
@@ -270,12 +288,24 @@ export class PulverizacionesController {
           ? null
           : VALOR_TEORICO - data.valor_real,
       };
-      await this.consumoProductosService.updateValores(CONSUMO_DATA);
+      const updatedValoresConsumo =
+        await this.consumoProductosService.updateValores(CONSUMO_DATA);
 
       const updated =
         rol === 'EMPRESA'
           ? await this.service.getByIdByEmpresa(data.pulverizacion_id, id)
           : await this.service.getById(data.pulverizacion_id, id);
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'PULVERIZACION',
+        description: `Se modificó el consumo de la aplicación de ${updatedValoresConsumo.producto.nombre} en la pulverización a realizar sobre ${updated.detalle.campo.nombre} el día ${DateTime.fromJSDate(new Date(updated.fecha)).setLocale('es-AR').toLocaleString(DateTime.DATE_SHORT)} que tiene como ID ${updated.id}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(updated);
     } catch (error) {
       if (error instanceof Error) throw error;
@@ -307,6 +337,17 @@ export class PulverizacionesController {
         rol === 'EMPRESA'
           ? await this.service.deleteByEmpresaById(pulverizacion_id, id)
           : await this.service.deleteById(pulverizacion_id, usuario_id);
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'PULVERIZACION',
+        description: `Se eliminó la pulverización a realizar sobre ${deleted.detalle.campo.nombre} el día ${DateTime.fromJSDate(new Date(deleted.fecha)).setLocale('es-AR').toLocaleString(DateTime.DATE_SHORT)}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

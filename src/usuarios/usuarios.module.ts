@@ -1,5 +1,6 @@
 import { AuthService } from 'src/auth/auth.service';
 import { HashService } from 'src/lib/hash.service';
+import { HistorialService } from 'src/historial/historial.service';
 import { JwtService } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -15,6 +16,7 @@ import { UsuariosService } from './usuarios.service';
     HashService,
     SesionesService,
     PrismaService,
+    HistorialService,
   ],
 })
 export class UsuariosModule {}

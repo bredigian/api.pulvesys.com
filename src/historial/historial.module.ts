@@ -1,19 +1,17 @@
-import { HistorialService } from 'src/historial/historial.service';
+import { HistorialController } from './historial.controller';
+import { HistorialService } from './historial.service';
 import { Module } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ProductosController } from './productos.controller';
-import { ProductosService } from './productos.service';
 import { SesionesService } from 'src/sesiones/sesiones.service';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Module({
-  controllers: [ProductosController],
+  controllers: [HistorialController],
   providers: [
-    ProductosService,
+    HistorialService,
     PrismaService,
     SesionesService,
     UsuariosService,
-    HistorialService,
   ],
 })
-export class ProductosModule {}
+export class HistorialModule {}

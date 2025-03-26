@@ -23,6 +23,8 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { HistorialService } from 'src/historial/historial.service';
+import { Log } from '@prisma/client';
 
 @Controller('cultivos')
 export class CultivosController {
@@ -30,6 +32,7 @@ export class CultivosController {
     private readonly service: CultivosService,
     private readonly jwtService: JwtService,
     private readonly usuariosService: UsuariosService,
+    private readonly logService: HistorialService,
   ) {}
 
   @Get()
@@ -49,6 +52,7 @@ export class CultivosController {
       const data = await this.service.getAll(
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
+
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -80,6 +84,16 @@ export class CultivosController {
         usuario_id: rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       });
 
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'CULTIVO',
+        description: `Se agregó el cultivo ${cultivo.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(cultivo);
     } catch (error) {
       if (error) throw error;
@@ -110,6 +124,17 @@ export class CultivosController {
         data,
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'CULTIVO',
+        description: `Se modificó el cultivo ${updated.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -142,6 +167,17 @@ export class CultivosController {
         cultivo_id,
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'CULTIVO',
+        description: `Se eliminó el cultivo ${deleted.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

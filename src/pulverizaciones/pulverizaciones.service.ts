@@ -129,6 +129,13 @@ export class PulverizacionesService {
   async deleteById(id: Pulverizacion['id'], usuario_id: Usuario['id']) {
     return await this.prisma.pulverizacion.delete({
       where: { id, usuario_id },
+      include: {
+        detalle: {
+          include: {
+            campo: true,
+          },
+        },
+      },
     });
   }
 
@@ -138,6 +145,13 @@ export class PulverizacionesService {
   ) {
     const deleted = await this.prisma.pulverizacion.delete({
       where: { id, usuario: { empresa_id } },
+      include: {
+        detalle: {
+          include: {
+            campo: true,
+          },
+        },
+      },
     });
     if (!deleted) return await this.deleteById(id, empresa_id);
 

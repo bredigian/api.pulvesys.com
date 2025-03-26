@@ -16,6 +16,6 @@ export class LotesService {
   }
 
   async deleteById(id: UUID) {
-    return this.prisma.lote.delete({ where: { id } });
+    return this.prisma.lote.delete({ where: { id }, include: { campo: true } });
   }
 }

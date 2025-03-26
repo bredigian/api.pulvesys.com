@@ -26,6 +26,8 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { Log } from '@prisma/client';
+import { HistorialService } from 'src/historial/historial.service';
 
 @Controller('campos')
 export class CamposController {
@@ -35,6 +37,7 @@ export class CamposController {
     private readonly coordinadaService: CoordinadasService,
     private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
+    private readonly logService: HistorialService,
   ) {}
 
   @Get()
@@ -105,6 +108,16 @@ export class CamposController {
         }
       }
 
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'UBICACION',
+        description: `Se agregó la ubicación ${campo.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(campo);
     } catch (error) {
       if (error) throw error;
@@ -130,7 +143,7 @@ export class CamposController {
       const { id, empresa_id, rol } =
         await this.usuariosService.findById(usuario_id);
 
-      await this.service.editCampo(
+      const edittedCampo = await this.service.editCampo(
         data,
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
@@ -153,6 +166,17 @@ export class CamposController {
           color: lote.color,
           campo_id: data.id,
         });
+
+        const PAYLOAD_LOG: Log = {
+          usuario_id: id,
+          type: 'UBICACION',
+          description: `Modificando la ubicación ${edittedCampo.nombre}, se agregó el lote ${loteCreated.nombre}.`,
+          id: undefined,
+          createdAt: undefined,
+        };
+
+        await this.logService.createLog(PAYLOAD_LOG);
+
         for (const zona of lote.zona) {
           await this.coordinadaService.addCoordinada({
             id: undefined,
@@ -167,6 +191,17 @@ export class CamposController {
         data.id,
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'UBICACION',
+        description: `Se modificó la ubicación ${updated.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -199,6 +234,17 @@ export class CamposController {
         campo_id,
         rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'UBICACION',
+        description: `Se eliminó la ubicación ${deleted.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -225,6 +271,17 @@ export class CamposController {
       const { id } = data;
 
       const deletedLote = await this.lotesService.deleteById(id);
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        type: 'UBICACION',
+        description: `Se eliminó el lote ${deletedLote.nombre} de la ubicación ${deletedLote.campo.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deletedLote);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
