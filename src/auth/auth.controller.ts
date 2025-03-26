@@ -82,7 +82,13 @@ export class AuthController {
       });
       response.cookie(
         'userdata',
-        JSON.stringify({ nombre_usuario, nombre, apellido, rol }),
+        JSON.stringify({
+          nombre_usuario,
+          nombre,
+          apellido,
+          rol,
+          isEmployer: false,
+        }),
         {
           expires: new Date(expireIn), // 15 dias
           domain,
@@ -92,7 +98,7 @@ export class AuthController {
       return response.json({
         access_token,
         expireIn,
-        userdata: { nombre_usuario, nombre, apellido, rol },
+        userdata: { nombre_usuario, nombre, apellido, rol, isEmployer: false },
       });
     } catch (e) {
       if (e) {
@@ -131,7 +137,9 @@ export class AuthController {
       if (!matchPassword)
         throw new UnauthorizedException('Las credenciales son incorrectas.');
 
-      const { id, nombre, apellido, rol } = exists;
+      const { id, nombre, apellido, rol, empresa_id } = exists;
+
+      const isEmployer = rol === 'INDIVIDUAL' && empresa_id ? true : false;
 
       await this.sesionesService.clearExpiredSesiones(id);
 
@@ -166,7 +174,13 @@ export class AuthController {
       });
       response.cookie(
         'userdata',
-        JSON.stringify({ nombre_usuario, nombre, apellido, rol }),
+        JSON.stringify({
+          nombre_usuario,
+          nombre,
+          apellido,
+          rol,
+          isEmployer,
+        }),
         {
           expires: new Date(expireIn), // 15 dias
           domain,
@@ -176,7 +190,7 @@ export class AuthController {
       return response.json({
         access_token,
         expireIn,
-        userdata: { nombre_usuario, nombre, apellido, rol },
+        userdata: { nombre_usuario, nombre, apellido, rol, isEmployer },
       });
     } catch (e) {
       if (e) throw e;
@@ -210,7 +224,9 @@ export class AuthController {
         throw new NotFoundException('La sesión no existe o ya expiró.');
 
       const { access_token, refresh_token, expireIn, usuario } = session;
-      const { nombre, nombre_usuario, apellido, rol } = usuario;
+      const { nombre, nombre_usuario, apellido, empresa_id, rol } = usuario;
+
+      const isEmployer = rol === 'INDIVIDUAL' && empresa_id ? true : false;
 
       let updatedAccessToken = access_token;
       let updatedRefreshToken = refresh_token;
@@ -252,7 +268,7 @@ export class AuthController {
         access_token: updatedAccessToken,
         refresh_token: updatedRefreshToken,
         expireIn: updatedExpireIn,
-        userdata: { nombre_usuario, nombre, apellido, rol },
+        userdata: { nombre_usuario, nombre, apellido, rol, isEmployer },
         domain,
       });
     } catch (e) {

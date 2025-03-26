@@ -30,6 +30,7 @@ export class SesionesService {
             nombre: true,
             apellido: true,
             rol: true,
+            empresa_id: true,
           },
         },
       },
