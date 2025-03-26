@@ -86,6 +86,7 @@ export class CultivosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'CULTIVO',
         description: `Se agregó el cultivo ${cultivo.nombre}.`,
         id: undefined,
@@ -127,6 +128,7 @@ export class CultivosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'CULTIVO',
         description: `Se modificó el cultivo ${updated.nombre}.`,
         id: undefined,
@@ -170,6 +172,7 @@ export class CultivosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'CULTIVO',
         description: `Se eliminó el cultivo ${deleted.nombre}.`,
         id: undefined,

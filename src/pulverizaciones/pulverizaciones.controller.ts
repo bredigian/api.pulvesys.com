@@ -221,6 +221,7 @@ export class PulverizacionesController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'PULVERIZACION',
         description: `Se registró una nueva pulverización para la ubicación ${campo.nombre}.`,
         id: undefined,
@@ -262,7 +263,8 @@ export class PulverizacionesController {
         authorization?.substring(7),
       );
 
-      const { id, rol } = await this.usuariosService.findById(usuario_id);
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
 
       const pulverizacion =
         rol === 'EMPRESA'
@@ -298,6 +300,7 @@ export class PulverizacionesController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'PULVERIZACION',
         description: `Se modificó el consumo de la aplicación de ${updatedValoresConsumo.producto.nombre} en la pulverización a realizar sobre ${updated.detalle.campo.nombre} el día ${DateTime.fromJSDate(new Date(updated.fecha)).setLocale('es-AR').toLocaleString(DateTime.DATE_SHORT)} que tiene como ID ${updated.id}.`,
         id: undefined,
@@ -331,7 +334,8 @@ export class PulverizacionesController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization?.substring(7),
       );
-      const { id, rol } = await this.usuariosService.findById(usuario_id);
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
 
       const deleted =
         rol === 'EMPRESA'
@@ -340,6 +344,7 @@ export class PulverizacionesController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'PULVERIZACION',
         description: `Se eliminó la pulverización a realizar sobre ${deleted.detalle.campo.nombre} el día ${DateTime.fromJSDate(new Date(deleted.fecha)).setLocale('es-AR').toLocaleString(DateTime.DATE_SHORT)}.`,
         id: undefined,

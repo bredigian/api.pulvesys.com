@@ -85,6 +85,7 @@ export class ProductosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'PRODUCTO',
         description: `Se agregó el producto ${producto.nombre}.`,
         id: undefined,
@@ -126,6 +127,7 @@ export class ProductosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'PRODUCTO',
         description: `Se modificó el producto ${updated.nombre}.`,
         id: undefined,
@@ -169,6 +171,7 @@ export class ProductosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'PRODUCTO',
         description: `Se eliminó el producto ${deleted.nombre}.`,
         id: undefined,

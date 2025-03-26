@@ -82,6 +82,7 @@ export class UsuariosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: empresa_id,
+        empresa_id: null,
         type: 'USUARIO',
         description: `Se registró un nuevo usuario a nombre de ${createdUser.nombre} ${createdUser.apellido}.`,
         id: undefined,

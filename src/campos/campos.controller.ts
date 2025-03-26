@@ -110,6 +110,7 @@ export class CamposController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'UBICACION',
         description: `Se agregó la ubicación ${campo.nombre}.`,
         id: undefined,
@@ -169,6 +170,7 @@ export class CamposController {
 
         const PAYLOAD_LOG: Log = {
           usuario_id: id,
+          empresa_id: empresa_id ?? null,
           type: 'UBICACION',
           description: `Modificando la ubicación ${edittedCampo.nombre}, se agregó el lote ${loteCreated.nombre}.`,
           id: undefined,
@@ -194,6 +196,7 @@ export class CamposController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'UBICACION',
         description: `Se modificó la ubicación ${updated.nombre}.`,
         id: undefined,
@@ -237,6 +240,7 @@ export class CamposController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'UBICACION',
         description: `Se eliminó la ubicación ${deleted.nombre}.`,
         id: undefined,
@@ -266,14 +270,24 @@ export class CamposController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteLoteById(@Res() response: Response, @Body() data: { id: UUID }) {
+  async deleteLoteById(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+    @Body() data: { id: UUID },
+  ) {
     try {
-      const { id } = data;
+      const { id: lote_id } = data;
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization.substring(7),
+      );
+      const { id, empresa_id } =
+        await this.usuariosService.findById(usuario_id);
 
-      const deletedLote = await this.lotesService.deleteById(id);
+      const deletedLote = await this.lotesService.deleteById(lote_id);
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'UBICACION',
         description: `Se eliminó el lote ${deletedLote.nombre} de la ubicación ${deletedLote.campo.nombre}.`,
         id: undefined,

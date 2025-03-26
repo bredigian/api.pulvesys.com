@@ -166,6 +166,7 @@ model Log {
   type        LOG
   description String
   usuario_id  String?
+  empresa_id  String?
   usuario     Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 }

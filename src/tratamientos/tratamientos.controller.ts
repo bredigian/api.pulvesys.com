@@ -85,6 +85,7 @@ export class TratamientosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'TRATAMIENTO',
         description: `Se agregó el tipo de tratamiento ${tratamiento.nombre}.`,
         id: undefined,
@@ -126,6 +127,7 @@ export class TratamientosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'TRATAMIENTO',
         description: `Se modificó el tipo de tratamiento ${updated.nombre}.`,
         id: undefined,
@@ -169,6 +171,7 @@ export class TratamientosController {
 
       const PAYLOAD_LOG: Log = {
         usuario_id: id,
+        empresa_id: empresa_id ?? null,
         type: 'TRATAMIENTO',
         description: `Se eliminó el tipo de tratamiento ${deleted.nombre}.`,
         id: undefined,

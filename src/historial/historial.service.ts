@@ -42,8 +42,28 @@ export class HistorialService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const dataByDeletedEmployes = await this.prisma.log.findMany({
+      where: { empresa_id },
+      include: {
+        usuario: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            rol: true,
+            empresa_id: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
     const dataByMySelf = await this.getAll(empresa_id);
-    const sortedData = [...dataByEmployers, ...dataByMySelf].sort(
+    const sortedData = [
+      ...dataByEmployers,
+      ...dataByDeletedEmployes,
+      ...dataByMySelf,
+    ].sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
