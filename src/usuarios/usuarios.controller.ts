@@ -69,15 +69,14 @@ export class UsuariosController {
       const { sub: empresa_id } = await this.jwtService.decode(
         authorization.substring(7),
       );
-      const { contrasena, rol: payloadRol } = payload;
-      if (payloadRol === 'ADMIN')
-        throw new ForbiddenException('El rol recibido no está habilitado.');
+      const { contrasena } = payload;
 
       const hashedPassword = await this.hashService.generateHash(contrasena);
       const createdUser = await this.service.createUser({
         ...payload,
         contrasena: hashedPassword,
         empresa_id,
+        rol: 'INDIVIDUAL',
       });
 
       const PAYLOAD_LOG: Log = {

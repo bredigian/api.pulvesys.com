@@ -1,5 +1,6 @@
-import { USUARIO_ROL } from '@prisma/client';
-import { IsEnum, IsPhoneNumber, IsString } from 'class-validator';
+import { IsPhoneNumber, IsString, IsUUID } from 'class-validator';
+
+import { Plan } from '@prisma/client';
 
 export class AuthDto {
   @IsString()
@@ -22,6 +23,6 @@ export class SignupDto extends AuthDto {
   @IsPhoneNumber('AR')
   nro_telefono: string;
 
-  @IsEnum(USUARIO_ROL)
-  rol: USUARIO_ROL;
+  @IsUUID()
+  plan_id: Plan['id'];
 }

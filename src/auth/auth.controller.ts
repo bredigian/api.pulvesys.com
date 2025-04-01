@@ -27,6 +27,11 @@ import { Hostname, TEnvironment } from 'src/types/environment.types';
 import { HashService } from 'src/lib/hash.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { SuscripcionesService } from 'src/suscripciones/suscripciones.service';
+import { Suscripcion, Usuario } from '@prisma/client';
+import { DateTime } from 'luxon';
+import { PlanesService } from 'src/planes/planes.service';
+import { SuscripcionCreation } from 'src/types/suscripciones.types';
 
 @Controller('auth')
 export class AuthController {
@@ -39,6 +44,8 @@ export class AuthController {
     private readonly jwtService: JwtService,
     private readonly authService: AuthService,
     private readonly hashService: HashService,
+    private readonly suscripcionesService: SuscripcionesService,
+    private readonly planesService: PlanesService,
   ) {}
 
   @Version('1')
@@ -46,17 +53,36 @@ export class AuthController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async signup(@Body() payload: SignupDto, @Res() response: Response) {
     try {
-      const { contrasena, rol: payloadRol } = payload;
-      if (payloadRol === 'ADMIN')
+      const { contrasena } = payload;
+      const plan = await this.planesService.getById(payload.plan_id);
+      if (!plan) throw new NotFoundException('El plan seleccionado no existe.');
+
+      if (plan.nombre === 'ADMIN')
         throw new ForbiddenException('El rol recibido no está habilitado.');
+
+      delete payload.plan_id;
 
       const hashedPassword = await this.hashService.generateHash(contrasena);
       const createdUser = await this.usuariosService.createUser({
         ...payload,
+        rol: plan.nombre,
         contrasena: hashedPassword,
       });
 
       const { id, nombre, nombre_usuario, apellido, rol } = createdUser;
+
+      const now = DateTime.now();
+
+      // Crear la suscripcion con 30 días de prueba
+      const SUSCRIPCION_PAYLOAD: SuscripcionCreation = {
+        usuario_id: id,
+        plan_id: plan.id,
+        free_trial: true,
+        status: 'pending',
+        fecha_fin: now.toUTC().plus({ days: 30 }).toJSDate(),
+      };
+      await this.suscripcionesService.createSuscripcion(SUSCRIPCION_PAYLOAD);
+
       const { access_token, refresh_token } =
         await this.authService.generateTokens(id);
 
@@ -120,11 +146,7 @@ export class AuthController {
   @Version('1')
   @Post('signin')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async signin(
-    @Req() request: Request,
-    @Body() payload: AuthDto,
-    @Res() response: Response,
-  ) {
+  async signin(@Body() payload: AuthDto, @Res() response: Response) {
     try {
       const { nombre_usuario, contrasena } = payload;
       const exists = await this.usuariosService.findByUsername(nombre_usuario);

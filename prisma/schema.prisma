@@ -138,6 +138,8 @@ model Usuario {
   Campo           Campo[]
   Cultivo         Cultivo[]
   Log             Log[]
+  Suscripcion     Suscripcion[]
+  SuscripcionLog  SuscripcionLog[]
 }
 
 model Sesion {
@@ -169,4 +171,39 @@ model Log {
   empresa_id  String?
   usuario     Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
+}
+
+model Plan {
+  id          String        @id @unique @default(uuid())
+  nombre      USUARIO_ROL
+  descripcion String[]
+  valor       Float
+  Suscripcion Suscripcion[]
+}
+
+enum STATUS {
+  pending
+  authorized
+  cancelled
+}
+
+model Suscripcion {
+  usuario_id String   @id @unique
+  id         String?
+  plan_id    String
+  plan       Plan     @relation(fields: [plan_id], references: [id])
+  usuario    Usuario  @relation(fields: [usuario_id], references: [id])
+  fecha_fin  DateTime
+  free_trial Boolean
+  status     STATUS
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model SuscripcionLog {
+  id         String   @id @unique @default(uuid())
+  fecha      DateTime
+  monto      Float
+  usuario_id String
+  usuario    Usuario  @relation(fields: [usuario_id], references: [id])
 }

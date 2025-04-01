@@ -16,6 +16,9 @@ import { SesionesModule } from './sesiones/sesiones.module';
 import { TratamientosModule } from './tratamientos/tratamientos.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { HistorialModule } from './historial/historial.module';
+import { MercadopagoModule } from './mercadopago/mercadopago.module';
+import { SuscripcionesModule } from './suscripciones/suscripciones.module';
+import { PlanesModule } from './planes/planes.module';
 
 @Module({
   imports: [
@@ -34,6 +37,9 @@ import { HistorialModule } from './historial/historial.module';
     SesionesModule,
     UsuariosModule,
     HistorialModule,
+    MercadopagoModule,
+    SuscripcionesModule,
+    PlanesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

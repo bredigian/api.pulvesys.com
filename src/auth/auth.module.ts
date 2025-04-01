@@ -3,8 +3,10 @@ import { AuthService } from './auth.service';
 import { HashService } from 'src/lib/hash.service';
 import { JwtModule } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
+import { PlanesService } from 'src/planes/planes.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SesionesService } from 'src/sesiones/sesiones.service';
+import { SuscripcionesService } from 'src/suscripciones/suscripciones.service';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Module({
@@ -24,6 +26,8 @@ import { UsuariosService } from 'src/usuarios/usuarios.service';
     SesionesService,
     HashService,
     PrismaService,
+    SuscripcionesService,
+    PlanesService,
   ],
 })
 export class AuthModule {}
