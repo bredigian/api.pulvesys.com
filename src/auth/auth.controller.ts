@@ -79,6 +79,7 @@ export class AuthController {
         plan_id: plan.id,
         free_trial: true,
         status: 'pending',
+        message_info: 'welcome',
         fecha_fin: now.toUTC().plus({ days: 30 }).toJSDate(),
       };
       await this.suscripcionesService.createSuscripcion(SUSCRIPCION_PAYLOAD);

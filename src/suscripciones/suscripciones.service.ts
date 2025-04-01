@@ -1,6 +1,7 @@
+import { SUBSCRIPTION_MESSAGE, Suscripcion } from '@prisma/client';
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Suscripcion } from '@prisma/client';
 import { SuscripcionCreation } from 'src/types/suscripciones.types';
 
 @Injectable()
@@ -20,5 +21,15 @@ export class SuscripcionesService {
 
   async getByUsuarioId(usuario_id: Suscripcion['usuario_id']) {
     return await this.prisma.suscripcion.findUnique({ where: { usuario_id } });
+  }
+
+  async updateMessageInfo(
+    usuario_id: Suscripcion['usuario_id'],
+    value: SUBSCRIPTION_MESSAGE,
+  ) {
+    return await this.prisma.suscripcion.update({
+      where: { usuario_id },
+      data: { message_info: value },
+    });
   }
 }

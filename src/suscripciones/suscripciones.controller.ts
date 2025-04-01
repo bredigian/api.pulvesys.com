@@ -7,6 +7,7 @@ import {
   HttpStatus,
   InternalServerErrorException,
   NotFoundException,
+  Patch,
   Post,
   Res,
   UseGuards,
@@ -24,7 +25,7 @@ import {
   MPNotification,
   PayloadForInitPoint,
 } from 'src/types/mercadopago.types';
-import { SuscripcionDTO } from './suscripcion.dto';
+import { MessageInfoDTO, SuscripcionDTO } from './suscripcion.dto';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { STATUS, Suscripcion } from '@prisma/client';
 import { DateTime } from 'luxon';
@@ -126,6 +127,34 @@ export class SuscripcionesController {
         await this.mercadopago.generatePreapproval(PAYLOAD);
 
       return response.json({ init_point });
+    } catch (e) {
+      if (e) throw e;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
+
+  @Patch('mensaje')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  async updateMessageInfo(
+    @Res() response: Response,
+    @Body() data: MessageInfoDTO,
+    @Headers('Authorization') authorization: string,
+  ) {
+    try {
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization.substring(7),
+      );
+
+      const updated = await this.service.updateMessageInfo(
+        usuario_id,
+        data.message_info,
+      );
+
+      return response.json(updated);
     } catch (e) {
       if (e) throw e;
 

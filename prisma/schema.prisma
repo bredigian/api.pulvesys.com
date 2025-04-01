@@ -187,17 +187,25 @@ enum STATUS {
   cancelled
 }
 
+enum SUBSCRIPTION_MESSAGE {
+  welcome
+  warning
+  cancelled
+  disabled
+}
+
 model Suscripcion {
-  usuario_id String   @id @unique
-  id         String?
-  plan_id    String
-  plan       Plan     @relation(fields: [plan_id], references: [id])
-  usuario    Usuario  @relation(fields: [usuario_id], references: [id])
-  fecha_fin  DateTime
-  free_trial Boolean
-  status     STATUS
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  usuario_id   String               @id @unique
+  id           String?
+  plan_id      String
+  plan         Plan                 @relation(fields: [plan_id], references: [id])
+  usuario      Usuario              @relation(fields: [usuario_id], references: [id])
+  fecha_fin    DateTime
+  free_trial   Boolean
+  status       STATUS
+  message_info SUBSCRIPTION_MESSAGE @default(welcome)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 }
 
 model SuscripcionLog {

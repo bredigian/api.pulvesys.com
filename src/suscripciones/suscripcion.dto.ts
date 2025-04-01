@@ -1,5 +1,5 @@
-import { IsNumber, IsUUID } from 'class-validator';
-import { Plan, Usuario } from '@prisma/client';
+import { IsEnum, IsNumber, IsUUID } from 'class-validator';
+import { Plan, SUBSCRIPTION_MESSAGE, Usuario } from '@prisma/client';
 
 export class SuscripcionDTO {
   @IsUUID()
@@ -7,4 +7,11 @@ export class SuscripcionDTO {
 
   @IsNumber()
   valor_actual: Plan['valor'];
+}
+
+export class MessageInfoDTO {
+  @IsEnum(SUBSCRIPTION_MESSAGE, {
+    message: 'El valor recibido no es admitido.',
+  })
+  message_info: SUBSCRIPTION_MESSAGE;
 }
