@@ -20,7 +20,12 @@ export class SuscripcionesService {
   }
 
   async getByUsuarioId(usuario_id: Suscripcion['usuario_id']) {
-    return await this.prisma.suscripcion.findUnique({ where: { usuario_id } });
+    return await this.prisma.suscripcion.findUnique({
+      where: { usuario_id },
+      include: {
+        plan: true,
+      },
+    });
   }
 
   async updateMessageInfo(

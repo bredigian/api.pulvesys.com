@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Headers,
   HttpCode,
   HttpStatus,
@@ -39,6 +40,30 @@ export class SuscripcionesController {
     private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
   ) {}
+
+  @Get()
+  @Version('1')
+  @UseGuards(AuthGuard)
+  async getSuscripcion(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+  ) {
+    try {
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization.substring(7),
+      );
+
+      const suscripcion = await this.service.getByUsuarioId(usuario_id);
+
+      return response.json(suscripcion);
+    } catch (e) {
+      if (e) throw e;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
 
   @Post('mercadopago')
   @Version('1')
