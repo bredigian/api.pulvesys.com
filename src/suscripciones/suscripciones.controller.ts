@@ -112,11 +112,10 @@ export class SuscripcionesController {
       const UPDATE_PAYLOAD: Partial<Suscripcion> = {
         id,
         free_trial: monthHasPast ? false : paymentMethodFailure ? true : false,
-        usuario_id,
         status: paymentMethodFailure ? 'pending' : STATUS,
         fecha_fin: DateTime.fromISO(next_payment_date).toUTC().toJSDate(),
       };
-      await this.service.updateSuscripcion(UPDATE_PAYLOAD);
+      await this.service.updateSuscripcion(usuario_id, UPDATE_PAYLOAD);
     }
   }
 

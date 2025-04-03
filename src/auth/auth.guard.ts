@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { DateTime } from 'luxon';
 import { JwtService } from '@nestjs/jwt';
 import { MercadopagoService } from 'src/mercadopago/mercadopago.service';
+import { STATUS } from '@prisma/client';
 import { SesionesService } from 'src/sesiones/sesiones.service';
 import { SuscripcionesService } from 'src/suscripciones/suscripciones.service';
 import { Tokens } from 'src/types/auth.types';
@@ -93,11 +94,13 @@ export class AuthGuard implements CanActivate {
         now.toMillis() > DateTime.fromJSDate(endDateFromDb).toMillis();
 
       if (isFreeTrialExpired)
-        await this.suscripcionesService.updateSuscripcion({
-          free_trial: false,
-          usuario_id: isEmployer ? empresa_id : id,
-          message_info: 'warning',
-        });
+        await this.suscripcionesService.updateSuscripcion(
+          isEmployer ? empresa_id : usuario_id,
+          {
+            free_trial: false,
+            message_info: 'warning',
+          },
+        );
     }
 
     const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
@@ -114,12 +117,14 @@ export class AuthGuard implements CanActivate {
 
       // Si por algún motivo el webhook de MP falla y no actualiza la DB
       // y los datos de la DB no coinciden con MP, actualiza la DB
-      if (status !== dbStatus && endDateFromMP !== endDateFromDb)
-        await this.suscripcionesService.updateSuscripcion({
-          usuario_id: isEmployer ? empresa_id : usuario_id,
-          status: dbStatus,
-          fecha_fin: endDateFromMP,
-        });
+      if (status !== dbStatus || endDateFromMP !== endDateFromDb)
+        await this.suscripcionesService.updateSuscripcion(
+          isEmployer ? empresa_id : usuario_id,
+          {
+            status: status as STATUS,
+            fecha_fin: new Date(next_payment_date),
+          },
+        );
 
       response.cookie(
         'userdata',

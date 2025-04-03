@@ -195,11 +195,13 @@ export class AuthController {
           now.toMillis() > DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
 
         if (isFreeTrialExpired)
-          await this.suscripcionesService.updateSuscripcion({
-            free_trial: false,
-            usuario_id: isEmployer ? empresa_id : id,
-            message_info: 'warning',
-          });
+          await this.suscripcionesService.updateSuscripcion(
+            isEmployer ? empresa_id : id,
+            {
+              free_trial: false,
+              message_info: 'warning',
+            },
+          );
       }
 
       await this.sesionesService.clearExpiredSesiones(id);
@@ -323,11 +325,13 @@ export class AuthController {
           now.toMillis() > DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
 
         if (isFreeTrialExpired)
-          await this.suscripcionesService.updateSuscripcion({
-            free_trial: false,
-            usuario_id: isEmployer ? empresa_id : id,
-            message_info: 'warning',
-          });
+          await this.suscripcionesService.updateSuscripcion(
+            isEmployer ? empresa_id : id,
+            {
+              free_trial: false,
+              message_info: 'warning',
+            },
+          );
       }
 
       let updatedAccessToken = access_token;
