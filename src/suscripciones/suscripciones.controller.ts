@@ -54,6 +54,10 @@ export class SuscripcionesController {
       );
 
       const suscripcion = await this.service.getByUsuarioId(usuario_id);
+      if (!suscripcion)
+        throw new NotFoundException(
+          'No se encontró la suscripción para el usuario.',
+        );
 
       return response.json(suscripcion);
     } catch (e) {
