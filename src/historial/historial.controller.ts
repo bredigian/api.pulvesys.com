@@ -38,6 +38,7 @@ export class HistorialController {
         rol === 'EMPRESA'
           ? await this.service.getAllByEmpresa(id)
           : await this.service.getAll(id);
+
       return response.json(data);
     } catch (e) {
       if (e) throw e;

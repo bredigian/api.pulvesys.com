@@ -43,7 +43,7 @@ export class HistorialService {
     });
 
     const dataByDeletedEmployes = await this.prisma.log.findMany({
-      where: { empresa_id },
+      where: { usuario: null, empresa_id },
       include: {
         usuario: {
           select: {
