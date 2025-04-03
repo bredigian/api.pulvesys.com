@@ -28,15 +28,12 @@ import { HashService } from 'src/lib/hash.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { SuscripcionesService } from 'src/suscripciones/suscripciones.service';
-import { Suscripcion, Usuario } from '@prisma/client';
 import { DateTime } from 'luxon';
 import { PlanesService } from 'src/planes/planes.service';
 import { SuscripcionCreation } from 'src/types/suscripciones.types';
 
 @Controller('auth')
 export class AuthController {
-  private logger = new Logger('Auth Logger');
-
   constructor(
     private readonly service: AuthService,
     private readonly sesionesService: SesionesService,
@@ -82,7 +79,8 @@ export class AuthController {
         message_info: 'welcome',
         fecha_fin: now.toUTC().plus({ days: 30 }).toJSDate(),
       };
-      await this.suscripcionesService.createSuscripcion(SUSCRIPCION_PAYLOAD);
+      const { free_trial, status, fecha_fin, message_info } =
+        await this.suscripcionesService.createSuscripcion(SUSCRIPCION_PAYLOAD);
 
       const { access_token, refresh_token } =
         await this.authService.generateTokens(id);
@@ -115,6 +113,12 @@ export class AuthController {
           apellido,
           rol,
           isEmployer: false,
+          suscripcion: {
+            free_trial,
+            status,
+            next_payment_date: fecha_fin,
+            message_info,
+          },
         }),
         {
           expires: new Date(expireIn), // 15 dias
@@ -125,7 +129,19 @@ export class AuthController {
       return response.json({
         access_token,
         expireIn,
-        userdata: { nombre_usuario, nombre, apellido, rol, isEmployer: false },
+        userdata: {
+          nombre_usuario,
+          nombre,
+          apellido,
+          rol,
+          isEmployer: false,
+          suscripcion: {
+            free_trial,
+            status,
+            next_payment_date: fecha_fin,
+            message_info,
+          },
+        },
       });
     } catch (e) {
       if (e) {
@@ -161,8 +177,30 @@ export class AuthController {
         throw new UnauthorizedException('Las credenciales son incorrectas.');
 
       const { id, nombre, apellido, rol, empresa_id } = exists;
-
       const isEmployer = rol === 'INDIVIDUAL' && empresa_id ? true : false;
+
+      const suscripcion = await this.suscripcionesService.getByUsuarioId(
+        isEmployer ? empresa_id : id,
+      );
+      if (!suscripcion)
+        throw new NotFoundException(
+          'Hay un conflicto con la suscripción del usuario.',
+        );
+
+      const { free_trial, message_info, status, fecha_fin } = suscripcion;
+
+      if (status === 'pending') {
+        const now = DateTime.now();
+        const isFreeTrialExpired =
+          now.toMillis() > DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
+
+        if (isFreeTrialExpired)
+          await this.suscripcionesService.updateSuscripcion({
+            free_trial: false,
+            usuario_id: isEmployer ? empresa_id : id,
+            message_info: 'warning',
+          });
+      }
 
       await this.sesionesService.clearExpiredSesiones(id);
 
@@ -203,6 +241,12 @@ export class AuthController {
           apellido,
           rol,
           isEmployer,
+          suscripcion: {
+            free_trial,
+            status,
+            next_payment_date: fecha_fin,
+            message_info,
+          },
         }),
         {
           expires: new Date(expireIn), // 15 dias
@@ -213,7 +257,19 @@ export class AuthController {
       return response.json({
         access_token,
         expireIn,
-        userdata: { nombre_usuario, nombre, apellido, rol, isEmployer },
+        userdata: {
+          nombre_usuario,
+          nombre,
+          apellido,
+          rol,
+          isEmployer,
+          suscripcion: {
+            free_trial,
+            status,
+            next_payment_date: fecha_fin,
+            message_info,
+          },
+        },
       });
     } catch (e) {
       if (e) throw e;
@@ -247,9 +303,32 @@ export class AuthController {
         throw new NotFoundException('La sesión no existe o ya expiró.');
 
       const { access_token, refresh_token, expireIn, usuario } = session;
-      const { nombre, nombre_usuario, apellido, empresa_id, rol } = usuario;
+      const { id, nombre, nombre_usuario, apellido, empresa_id, rol } = usuario;
 
       const isEmployer = rol === 'INDIVIDUAL' && empresa_id ? true : false;
+
+      const suscripcion = await this.suscripcionesService.getByUsuarioId(
+        isEmployer ? empresa_id : id,
+      );
+      if (!suscripcion)
+        throw new NotFoundException(
+          'No se encontró la suscripción del usuario en el sistema.',
+        );
+
+      const { free_trial, status, message_info, fecha_fin } = suscripcion;
+
+      if (status === 'pending') {
+        const now = DateTime.now();
+        const isFreeTrialExpired =
+          now.toMillis() > DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
+
+        if (isFreeTrialExpired)
+          await this.suscripcionesService.updateSuscripcion({
+            free_trial: false,
+            usuario_id: isEmployer ? empresa_id : id,
+            message_info: 'warning',
+          });
+      }
 
       let updatedAccessToken = access_token;
       let updatedRefreshToken = refresh_token;
@@ -291,7 +370,19 @@ export class AuthController {
         access_token: updatedAccessToken,
         refresh_token: updatedRefreshToken,
         expireIn: updatedExpireIn,
-        userdata: { nombre_usuario, nombre, apellido, rol, isEmployer },
+        userdata: {
+          nombre_usuario,
+          nombre,
+          apellido,
+          rol,
+          isEmployer,
+          suscripcion: {
+            free_trial,
+            status,
+            next_payment_date: fecha_fin,
+            message_info,
+          },
+        },
         domain,
       });
     } catch (e) {

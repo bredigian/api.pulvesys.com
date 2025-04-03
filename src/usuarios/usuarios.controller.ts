@@ -17,7 +17,7 @@ import { UsuariosService } from './usuarios.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
-import { SignupDto } from 'src/auth/auth.dto';
+import { CreateUserDto, SignupDto } from 'src/auth/auth.dto';
 import { HashService } from 'src/lib/hash.service';
 import { AuthService } from 'src/auth/auth.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -62,7 +62,7 @@ export class UsuariosController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async createUsuario(
     @Headers('Authorization') authorization: string,
-    @Body() payload: SignupDto,
+    @Body() payload: CreateUserDto,
     @Res() response: Response,
   ) {
     try {

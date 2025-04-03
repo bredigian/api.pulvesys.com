@@ -26,6 +26,7 @@ export class SesionesService {
       include: {
         usuario: {
           select: {
+            id: true,
             nombre_usuario: true,
             nombre: true,
             apellido: true,

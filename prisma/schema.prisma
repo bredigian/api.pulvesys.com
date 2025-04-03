@@ -203,7 +203,7 @@ model Suscripcion {
   fecha_fin    DateTime
   free_trial   Boolean
   status       STATUS
-  message_info SUBSCRIPTION_MESSAGE @default(welcome)
+  message_info SUBSCRIPTION_MESSAGE
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
 }

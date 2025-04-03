@@ -10,7 +10,7 @@ export class AuthDto {
   contrasena: string;
 }
 
-export class SignupDto extends AuthDto {
+export class CreateUserDto extends AuthDto {
   @IsString()
   nombre: string;
 
@@ -22,7 +22,8 @@ export class SignupDto extends AuthDto {
 
   @IsPhoneNumber('AR')
   nro_telefono: string;
-
+}
+export class SignupDto extends CreateUserDto {
   @IsUUID()
   plan_id: Plan['id'];
 }
