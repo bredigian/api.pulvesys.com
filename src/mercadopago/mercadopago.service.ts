@@ -40,4 +40,11 @@ export class MercadopagoService {
   async getPreapproval(id: PreApprovalGetData['id']) {
     return await new PreApproval(this.client).get({ id });
   }
+
+  async unsuscribe(id: PreApprovalGetData['id']) {
+    return await new PreApproval(this.client).update({
+      id,
+      body: { status: 'cancelled' },
+    });
+  }
 }

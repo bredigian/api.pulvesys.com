@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
@@ -181,6 +182,49 @@ export class SuscripcionesController {
         usuario_id,
         data.message_info,
       );
+
+      return response.json(updated);
+    } catch (e) {
+      if (e) throw e;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
+
+  @Delete()
+  @Version('1')
+  @UseGuards(AuthGuard)
+  async unsuscribe(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+  ) {
+    try {
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization.substring(7),
+      );
+
+      const suscripcion = await this.service.getByUsuarioId(usuario_id);
+      if (!suscripcion)
+        throw new NotFoundException(
+          'No se encontró la suscripción para el usuario.',
+        );
+
+      const { id } = suscripcion;
+
+      const { status, next_payment_date } =
+        await this.mercadopago.unsuscribe(id);
+
+      const updated = await this.service.updateSuscripcion(usuario_id, {
+        status: status as STATUS,
+        fecha_fin: DateTime.fromJSDate(new Date(next_payment_date))
+          .toUTC()
+          .toJSDate(),
+        message_info: 'cancelled',
+      });
+
+      // Acá deberia setear nuevamente la cookie 'userdata' con los datos actualizados de la suscripcion
 
       return response.json(updated);
     } catch (e) {

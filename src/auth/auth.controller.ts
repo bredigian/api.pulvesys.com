@@ -118,6 +118,10 @@ export class AuthController {
             status,
             next_payment_date: fecha_fin,
             message_info,
+            plan: {
+              id: plan.id,
+              valor_actual: plan.valor,
+            },
           },
         }),
         {
@@ -140,6 +144,10 @@ export class AuthController {
             status,
             next_payment_date: fecha_fin,
             message_info,
+            plan: {
+              id: plan.id,
+              valor_actual: plan.valor,
+            },
           },
         },
       });
@@ -248,6 +256,10 @@ export class AuthController {
             status,
             next_payment_date: fecha_fin,
             message_info,
+            plan: {
+              id: suscripcion.plan_id,
+              valor_actual: suscripcion.plan.valor,
+            },
           },
         }),
         {
@@ -270,6 +282,10 @@ export class AuthController {
             status,
             next_payment_date: fecha_fin,
             message_info,
+            plan: {
+              id: suscripcion.plan_id,
+              valor_actual: suscripcion.plan.valor,
+            },
           },
         },
       });
@@ -385,6 +401,10 @@ export class AuthController {
             status,
             next_payment_date: fecha_fin,
             message_info,
+            plan: {
+              id: suscripcion.plan_id,
+              valor_actual: suscripcion.plan.valor,
+            },
           },
         },
         domain,

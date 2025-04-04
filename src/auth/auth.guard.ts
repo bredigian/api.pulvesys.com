@@ -84,6 +84,7 @@ export class AuthGuard implements CanActivate {
       message_info,
       status: dbStatus,
       fecha_fin,
+      plan,
     } = suscripcion;
 
     const endDateFromDb = new Date(fecha_fin);
@@ -117,7 +118,11 @@ export class AuthGuard implements CanActivate {
 
       // Si por algún motivo el webhook de MP falla y no actualiza la DB
       // y los datos de la DB no coinciden con MP, actualiza la DB
-      if (status !== dbStatus || endDateFromMP !== endDateFromDb)
+
+      if (
+        status !== dbStatus ||
+        endDateFromMP.getTime() !== endDateFromDb.getTime()
+      )
         await this.suscripcionesService.updateSuscripcion(
           isEmployer ? empresa_id : usuario_id,
           {
@@ -130,7 +135,16 @@ export class AuthGuard implements CanActivate {
         'userdata',
         JSON.stringify({
           ...storedSession.usuario,
-          suscripcion: { free_trial, status, next_payment_date, message_info },
+          suscripcion: {
+            free_trial,
+            status,
+            next_payment_date,
+            message_info,
+            plan: {
+              id: plan.id,
+              valor_actual: plan.valor,
+            },
+          },
         }),
         {
           expires: updatedExpireIn,
@@ -147,6 +161,10 @@ export class AuthGuard implements CanActivate {
             status: dbStatus,
             next_payment_date: fecha_fin,
             message_info,
+            plan: {
+              id: plan.id,
+              valor_actual: plan.valor,
+            },
           },
         }),
         {

@@ -9,7 +9,10 @@ export class SuscripcionesService {
   constructor(private prisma: PrismaService) {}
 
   async createSuscripcion(data: SuscripcionCreation) {
-    return await this.prisma.suscripcion.create({ data });
+    return await this.prisma.suscripcion.create({
+      data,
+      include: { plan: true },
+    });
   }
 
   async updateSuscripcion(
