@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
   Patch,
   Post,
@@ -34,6 +35,8 @@ import { DateTime } from 'luxon';
 
 @Controller('suscripciones')
 export class SuscripcionesController {
+  private readonly logger = new Logger(SuscripcionesController.name);
+
   constructor(
     private readonly service: SuscripcionesService,
     private readonly mercadopago: MercadopagoService,
@@ -74,6 +77,7 @@ export class SuscripcionesController {
   @Version('1')
   @HttpCode(HttpStatus.NO_CONTENT)
   async getNotifications(@Body() notification: MPNotification) {
+    this.logger.debug(notification);
     const { type, data } = notification;
 
     if (type === 'subscription_preapproval') {
@@ -115,6 +119,11 @@ export class SuscripcionesController {
         free_trial: monthHasPast ? false : paymentMethodFailure ? true : false,
         status: paymentMethodFailure ? 'pending' : STATUS,
         fecha_fin: DateTime.fromISO(next_payment_date).toUTC().toJSDate(),
+        message_info: paymentMethodFailure
+          ? 'disabled'
+          : status === 'cancelled'
+            ? 'cancelled'
+            : 'disabled',
       };
       await this.service.updateSuscripcion(usuario_id, UPDATE_PAYLOAD);
     }
@@ -213,20 +222,9 @@ export class SuscripcionesController {
 
       const { id } = suscripcion;
 
-      const { status, next_payment_date } =
-        await this.mercadopago.unsuscribe(id);
+      await this.mercadopago.unsuscribe(id);
 
-      const updated = await this.service.updateSuscripcion(usuario_id, {
-        status: status as STATUS,
-        fecha_fin: DateTime.fromJSDate(new Date(next_payment_date))
-          .toUTC()
-          .toJSDate(),
-        message_info: 'cancelled',
-      });
-
-      // Acá deberia setear nuevamente la cookie 'userdata' con los datos actualizados de la suscripcion
-
-      return response.json(updated);
+      return response.json({ ok: true });
     } catch (e) {
       if (e) throw e;
 
