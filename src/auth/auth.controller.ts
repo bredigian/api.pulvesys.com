@@ -197,20 +197,27 @@ export class AuthController {
 
       const { free_trial, message_info, status, fecha_fin } = suscripcion;
 
-      if (status === 'pending') {
-        const now = DateTime.now();
-        const isFreeTrialExpired =
-          now.toMillis() > DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
+      const now = DateTime.now();
 
-        if (isFreeTrialExpired)
-          await this.suscripcionesService.updateSuscripcion(
-            isEmployer ? empresa_id : id,
-            {
-              free_trial: false,
-              message_info: 'warning',
-            },
-          );
-      }
+      if (rol !== 'ADMIN') {
+        if (status === 'pending') {
+          const isFreeTrialExpired =
+            now.toMillis() >
+            DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
+
+          if (isFreeTrialExpired)
+            await this.suscripcionesService.updateSuscripcion(
+              isEmployer ? empresa_id : id,
+              {
+                free_trial: false,
+                message_info: 'warning',
+              },
+            );
+        }
+      } else
+        await this.suscripcionesService.updateSuscripcion(id, {
+          fecha_fin: now.plus({ years: 1 }).toUTC().toJSDate(),
+        });
 
       await this.sesionesService.clearExpiredSesiones(id);
 
@@ -254,7 +261,10 @@ export class AuthController {
           suscripcion: {
             free_trial,
             status,
-            next_payment_date: fecha_fin,
+            next_payment_date:
+              rol === 'ADMIN'
+                ? now.plus({ years: 1 }).toUTC().toJSDate()
+                : fecha_fin,
             message_info,
             plan: {
               id: suscripcion.plan_id,
@@ -280,7 +290,10 @@ export class AuthController {
           suscripcion: {
             free_trial,
             status,
-            next_payment_date: fecha_fin,
+            next_payment_date:
+              rol === 'ADMIN'
+                ? now.plus({ years: 1 }).toUTC().toJSDate()
+                : fecha_fin,
             message_info,
             plan: {
               id: suscripcion.plan_id,
@@ -335,20 +348,27 @@ export class AuthController {
 
       const { free_trial, status, message_info, fecha_fin } = suscripcion;
 
-      if (status === 'pending') {
-        const now = DateTime.now();
-        const isFreeTrialExpired =
-          now.toMillis() > DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
+      const now = DateTime.now();
 
-        if (isFreeTrialExpired)
-          await this.suscripcionesService.updateSuscripcion(
-            isEmployer ? empresa_id : id,
-            {
-              free_trial: false,
-              message_info: 'warning',
-            },
-          );
-      }
+      if (rol !== 'ADMIN') {
+        if (status === 'pending') {
+          const isFreeTrialExpired =
+            now.toMillis() >
+            DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
+
+          if (isFreeTrialExpired)
+            await this.suscripcionesService.updateSuscripcion(
+              isEmployer ? empresa_id : id,
+              {
+                free_trial: false,
+                message_info: 'warning',
+              },
+            );
+        }
+      } else
+        await this.suscripcionesService.updateSuscripcion(id, {
+          fecha_fin: now.plus({ years: 1 }).toUTC().toJSDate(),
+        });
 
       let updatedAccessToken = access_token;
       let updatedRefreshToken = refresh_token;
@@ -399,7 +419,10 @@ export class AuthController {
           suscripcion: {
             free_trial,
             status,
-            next_payment_date: fecha_fin,
+            next_payment_date:
+              rol === 'ADMIN'
+                ? now.plus({ years: 1 }).toUTC().toJSDate()
+                : fecha_fin,
             message_info,
             plan: {
               id: suscripcion.plan_id,

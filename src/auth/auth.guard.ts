@@ -89,25 +89,30 @@ export class AuthGuard implements CanActivate {
 
     const endDateFromDb = new Date(fecha_fin);
 
-    if (dbStatus === 'pending') {
-      const now = DateTime.now();
-      const isFreeTrialExpired =
-        now.toMillis() > DateTime.fromJSDate(endDateFromDb).toMillis();
+    const now = DateTime.now();
 
-      if (isFreeTrialExpired)
-        await this.suscripcionesService.updateSuscripcion(
-          isEmployer ? empresa_id : usuario_id,
-          {
-            free_trial: false,
-            message_info: 'warning',
-          },
-        );
-    }
+    if (rol !== 'ADMIN') {
+      if (dbStatus === 'pending') {
+        const isFreeTrialExpired =
+          now.toMillis() > DateTime.fromJSDate(endDateFromDb).toMillis();
 
+        if (isFreeTrialExpired)
+          await this.suscripcionesService.updateSuscripcion(
+            isEmployer ? empresa_id : usuario_id,
+            {
+              free_trial: false,
+              message_info: 'warning',
+            },
+          );
+      }
+    } else
+      await this.suscripcionesService.updateSuscripcion(usuario_id, {
+        fecha_fin: now.plus({ years: 1 }).toUTC().toJSDate(),
+      });
     const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
     const domain = Hostname[ENVIRONMENT];
 
-    if (id) {
+    if (rol !== 'ADMIN' && id) {
       const preapproval = await this.mercadopago.getPreapproval(id);
       if (!preapproval)
         throw new UnauthorizedException(
@@ -159,7 +164,10 @@ export class AuthGuard implements CanActivate {
           suscripcion: {
             free_trial,
             status: dbStatus,
-            next_payment_date: fecha_fin,
+            next_payment_date:
+              rol === 'ADMIN'
+                ? now.plus({ years: 1 }).toUTC().toJSDate()
+                : fecha_fin,
             message_info,
             plan: {
               id: plan.id,
