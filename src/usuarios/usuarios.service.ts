@@ -18,7 +18,22 @@ export class UsuariosService {
     return await this.prisma.usuario.findUnique({ where: { nombre_usuario } });
   }
 
+  async findByEmail(email: Usuario['email']) {
+    return await this.prisma.usuario.findUnique({ where: { email } });
+  }
+
   async findById(id: Usuario['id']) {
     return await this.prisma.usuario.findUnique({ where: { id } });
+  }
+
+  async findByIdAndEmail(id: Usuario['id'], email: Usuario['email']) {
+    return await this.prisma.usuario.findUnique({ where: { id, email } });
+  }
+
+  async updateById(id: Usuario['id'], password: Usuario['contrasena']) {
+    return await this.prisma.usuario.update({
+      where: { id },
+      data: { contrasena: password },
+    });
   }
 }

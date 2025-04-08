@@ -140,6 +140,16 @@ model Usuario {
   Log             Log[]
   Suscripcion     Suscripcion[]
   SuscripcionLog  SuscripcionLog[]
+  RecoverToken    RecoverToken[]
+}
+
+model RecoverToken {
+  id         String   @id @unique @default(uuid())
+  usuario_id String
+  usuario    Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  token      String   @unique
+  createdAt  DateTime @default(now())
+  expireIn   DateTime
 }
 
 model Sesion {

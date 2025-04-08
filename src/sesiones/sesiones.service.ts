@@ -87,6 +87,10 @@ export class SesionesService {
     });
   }
 
+  async clearAllByUsuarioId(id: Usuario['id']) {
+    return await this.prisma.sesion.deleteMany({ where: { usuario_id: id } });
+  }
+
   async refreshTokens(refresh_token: Sesion['refresh_token']): Promise<Tokens> {
     const session = await this.prisma.sesion.findUnique({
       where: { refresh_token },

@@ -11,12 +11,14 @@ import {
   Get,
   Headers,
   InternalServerErrorException,
-  Logger,
   NotFoundException,
+  Patch,
   Post,
+  Query,
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
   UsePipes,
   ValidationPipe,
   Version,
@@ -31,6 +33,9 @@ import { SuscripcionesService } from 'src/suscripciones/suscripciones.service';
 import { DateTime } from 'luxon';
 import { PlanesService } from 'src/planes/planes.service';
 import { SuscripcionCreation } from 'src/types/suscripciones.types';
+import { Usuario } from '@prisma/client';
+import { RecoverTokenService } from 'src/recover-token/recover-token.service';
+import { RecoverTokenGuard } from 'src/recover-token/recover-token.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -43,6 +48,7 @@ export class AuthController {
     private readonly hashService: HashService,
     private readonly suscripcionesService: SuscripcionesService,
     private readonly planesService: PlanesService,
+    private readonly recoverTokenService: RecoverTokenService,
   ) {}
 
   @Version('1')
@@ -477,6 +483,127 @@ export class AuthController {
         console.error(e);
         throw e;
       }
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
+
+  @Version('1')
+  @Post('recuperar')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async sendRecoverEmail(
+    @Req() request: Request,
+    @Body() payload: { email: Usuario['email'] },
+  ) {
+    try {
+      const { email } = payload;
+
+      const usuario = await this.usuariosService.findByEmail(email);
+      if (!usuario)
+        throw new NotFoundException(
+          'No se encontró ningún usuario registrado con ese correo.',
+        );
+
+      const { id } = usuario;
+
+      const EXPIRATION_TOKEN = 900; // 15 minutos
+
+      const token = await this.jwtService.signAsync(
+        { sub: id, email },
+        { expiresIn: EXPIRATION_TOKEN },
+      );
+
+      await this.recoverTokenService.createToken({
+        token,
+        usuario_id: id,
+        expireIn: DateTime.now()
+          .plus({ seconds: EXPIRATION_TOKEN })
+          .toUTC()
+          .toJSDate(),
+      });
+
+      const url = request.headers.referer;
+
+      console.log(url);
+
+      return await this.recoverTokenService.sendRecoverEmail(url, email, token);
+    } catch (e) {
+      if (e) throw e;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
+
+  @Version('1')
+  @Get('recuperar')
+  async verifyRecoverToken(@Query() queryParams: { token: string }) {
+    try {
+      const { token } = queryParams;
+      if (!token)
+        throw new BadRequestException('El token de recuperación es requerido.');
+
+      const storedToken = await this.recoverTokenService.findOne(token);
+      if (!storedToken)
+        throw new NotFoundException('No se encontró el token recibido.');
+
+      const now = DateTime.now().toMillis();
+      const storedExpireIn = DateTime.fromJSDate(
+        new Date(storedToken.expireIn),
+      ).toMillis();
+      if (now > storedExpireIn)
+        throw new ForbiddenException('El token ya expiró.');
+
+      try {
+        await this.jwtService.verifyAsync(token);
+
+        const { sub, email } = await this.jwtService.decode(token);
+        const storedUsuario = await this.usuariosService.findByIdAndEmail(
+          sub,
+          email,
+        );
+        if (!storedUsuario)
+          throw new NotFoundException('No se encontró al usuario.');
+
+        return { ok: true };
+      } catch (e) {
+        throw new BadRequestException('El token no es válido o ya expiró.');
+      }
+    } catch (e) {
+      if (e) throw e;
+
+      throw new InternalServerErrorException(
+        'Se produjo un error interno en el servidor.',
+      );
+    }
+  }
+
+  @Version('1')
+  @Patch('recuperar')
+  @UseGuards(RecoverTokenGuard)
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async recoverPassword(
+    @Headers('Authorization') authorization: string,
+    @Body() payload: { contrasena: string },
+  ) {
+    try {
+      const token = authorization.substring(7);
+      const { sub: usuario_id } = await this.jwtService.decode(token);
+
+      const { contrasena } = payload;
+
+      const hashedPassword = await this.hashService.generateHash(contrasena);
+      await this.usuariosService.updateById(usuario_id, hashedPassword);
+      await this.sesionesService.clearAllByUsuarioId(usuario_id);
+
+      await this.recoverTokenService.deleteByToken(token);
+
+      return { ok: true };
+    } catch (e) {
+      if (e) throw e;
 
       throw new InternalServerErrorException(
         'Se produjo un error interno en el servidor.',

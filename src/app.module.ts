@@ -19,6 +19,7 @@ import { HistorialModule } from './historial/historial.module';
 import { MercadopagoModule } from './mercadopago/mercadopago.module';
 import { SuscripcionesModule } from './suscripciones/suscripciones.module';
 import { PlanesModule } from './planes/planes.module';
+import { RecoverTokenModule } from './recover-token/recover-token.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PlanesModule } from './planes/planes.module';
     MercadopagoModule,
     SuscripcionesModule,
     PlanesModule,
+    RecoverTokenModule,
   ],
   controllers: [AppController],
   providers: [AppService],
