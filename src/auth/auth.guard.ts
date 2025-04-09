@@ -78,26 +78,17 @@ export class AuthGuard implements CanActivate {
       );
     }
 
-    const {
-      free_trial,
-      id,
-      message_info,
-      status: dbStatus,
-      fecha_fin,
-      plan,
-    } = suscripcion;
-
-    const endDateFromDb = new Date(fecha_fin);
+    const endDateFromDb = new Date(suscripcion.fecha_fin);
 
     const now = DateTime.now();
 
     if (rol !== 'ADMIN') {
-      if (dbStatus === 'pending') {
+      if (suscripcion.status === 'pending') {
         const isFreeTrialExpired =
           now.toMillis() > DateTime.fromJSDate(endDateFromDb).toMillis();
 
         if (isFreeTrialExpired)
-          await this.suscripcionesService.updateSuscripcion(
+          suscripcion = await this.suscripcionesService.updateSuscripcion(
             isEmployer ? empresa_id : usuario_id,
             {
               free_trial: false,
@@ -106,14 +97,17 @@ export class AuthGuard implements CanActivate {
           );
       }
     } else
-      await this.suscripcionesService.updateSuscripcion(usuario_id, {
-        fecha_fin: now.plus({ years: 1 }).toUTC().toJSDate(),
-      });
+      suscripcion = await this.suscripcionesService.updateSuscripcion(
+        usuario_id,
+        {
+          fecha_fin: now.plus({ years: 1 }).toUTC().toJSDate(),
+        },
+      );
     const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
     const domain = Hostname[ENVIRONMENT];
 
-    if (rol !== 'ADMIN' && id) {
-      const preapproval = await this.mercadopago.getPreapproval(id);
+    if (rol !== 'ADMIN' && suscripcion.id) {
+      const preapproval = await this.mercadopago.getPreapproval(suscripcion.id);
       if (!preapproval)
         throw new UnauthorizedException(
           'No se encontró la suscripción del usuario en Mercado Pago.',
@@ -121,10 +115,10 @@ export class AuthGuard implements CanActivate {
 
       const { status, next_payment_date, summarized: extra } = preapproval;
 
-      // Si summarized.semaphore tiene valor "red" y la suscripción no está pausada en la BD, la actualizamos
-      if (extra?.semaphore === 'red' && suscripcion.status !== 'paused')
+      // Si status de MP es "paused" y en la BD tiene un valor distinto, lo actualizamos.
+      if (status === 'paused' && suscripcion.status !== 'paused')
         suscripcion = await this.suscripcionesService.updateSuscripcion(
-          isEmployer ? empresa_id : id,
+          isEmployer ? empresa_id : suscripcion.id,
           { status: 'paused', message_info: 'paused' },
         );
 
@@ -134,7 +128,7 @@ export class AuthGuard implements CanActivate {
       // y los datos de la DB no coinciden con MP, actualiza la DB
 
       if (
-        status !== dbStatus ||
+        status !== suscripcion.status ||
         endDateFromMP.getTime() !== endDateFromDb.getTime()
       )
         await this.suscripcionesService.updateSuscripcion(
@@ -150,13 +144,13 @@ export class AuthGuard implements CanActivate {
         JSON.stringify({
           ...storedSession.usuario,
           suscripcion: {
-            free_trial,
+            free_trial: suscripcion.free_trial,
             status,
             next_payment_date,
-            message_info,
+            message_info: suscripcion.message_info,
             plan: {
-              id: plan.id,
-              valor_actual: plan.valor,
+              id: suscripcion.plan.id,
+              valor_actual: suscripcion.plan.valor,
             },
             extra,
           },
@@ -172,16 +166,16 @@ export class AuthGuard implements CanActivate {
         JSON.stringify({
           ...storedSession.usuario,
           suscripcion: {
-            free_trial,
-            status: dbStatus,
+            free_trial: suscripcion.free_trial,
+            status: suscripcion.status,
             next_payment_date:
               rol === 'ADMIN'
                 ? now.plus({ years: 1 }).toUTC().toJSDate()
-                : fecha_fin,
-            message_info,
+                : suscripcion.fecha_fin,
+            message_info: suscripcion.message_info,
             plan: {
-              id: plan.id,
-              valor_actual: plan.valor,
+              id: suscripcion.plan.id,
+              valor_actual: suscripcion.plan.valor,
             },
           },
         }),

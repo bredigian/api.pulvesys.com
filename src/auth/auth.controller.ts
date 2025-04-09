@@ -204,17 +204,9 @@ export class AuthController {
           'Hay un conflicto con la suscripción del usuario.',
         );
 
-      const {
-        id: suscripcion_id,
-        free_trial,
-        message_info,
-        status,
-        fecha_fin,
-      } = suscripcion;
-
       let extra: PreApprovalResponse['summarized'];
-      if (suscripcion_id)
-        extra = (await this.mercadopago.getPreapproval(suscripcion_id))
+      if (suscripcion.id)
+        extra = (await this.mercadopago.getPreapproval(suscripcion.id))
           .summarized;
 
       // Si summarized.semaphore tiene valor "red" y la suscripción no está pausada en la BD, la actualizamos
@@ -227,13 +219,13 @@ export class AuthController {
       const now = DateTime.now();
 
       if (rol !== 'ADMIN') {
-        if (status === 'pending') {
+        if (suscripcion.status === 'pending') {
           const isFreeTrialExpired =
             now.toMillis() >
-            DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
+            DateTime.fromJSDate(new Date(suscripcion.fecha_fin)).toMillis();
 
           if (isFreeTrialExpired)
-            await this.suscripcionesService.updateSuscripcion(
+            suscripcion = await this.suscripcionesService.updateSuscripcion(
               isEmployer ? empresa_id : id,
               {
                 free_trial: false,
@@ -242,7 +234,7 @@ export class AuthController {
             );
         }
       } else
-        await this.suscripcionesService.updateSuscripcion(id, {
+        suscripcion = await this.suscripcionesService.updateSuscripcion(id, {
           fecha_fin: now.plus({ years: 1 }).toUTC().toJSDate(),
         });
 
@@ -286,13 +278,13 @@ export class AuthController {
           rol,
           isEmployer,
           suscripcion: {
-            free_trial,
-            status,
+            free_trial: suscripcion.free_trial,
+            status: suscripcion.status,
             next_payment_date:
               rol === 'ADMIN'
                 ? now.plus({ years: 1 }).toUTC().toJSDate()
-                : fecha_fin,
-            message_info,
+                : suscripcion.fecha_fin,
+            message_info: suscripcion.message_info,
             plan: {
               id: suscripcion.plan_id,
               valor_actual: suscripcion.plan.valor,
@@ -316,13 +308,13 @@ export class AuthController {
           rol,
           isEmployer,
           suscripcion: {
-            free_trial,
-            status,
+            free_trial: suscripcion.free_trial,
+            status: suscripcion.status,
             next_payment_date:
               rol === 'ADMIN'
                 ? now.plus({ years: 1 }).toUTC().toJSDate()
-                : fecha_fin,
-            message_info,
+                : suscripcion.fecha_fin,
+            message_info: suscripcion.message_info,
             plan: {
               id: suscripcion.plan_id,
               valor_actual: suscripcion.plan.valor,
@@ -375,17 +367,9 @@ export class AuthController {
           'No se encontró la suscripción del usuario en el sistema.',
         );
 
-      const {
-        id: suscripcion_id,
-        free_trial,
-        status,
-        message_info,
-        fecha_fin,
-      } = suscripcion;
-
       let extra: PreApprovalResponse['summarized'];
-      if (suscripcion_id)
-        extra = (await this.mercadopago.getPreapproval(suscripcion_id))
+      if (suscripcion.id)
+        extra = (await this.mercadopago.getPreapproval(suscripcion.id))
           .summarized;
 
       // Si summarized.semaphore tiene valor "red" y la suscripción no está pausada en la BD, la actualizamos
@@ -398,13 +382,13 @@ export class AuthController {
       const now = DateTime.now();
 
       if (rol !== 'ADMIN') {
-        if (status === 'pending') {
+        if (suscripcion.status === 'pending') {
           const isFreeTrialExpired =
             now.toMillis() >
-            DateTime.fromJSDate(new Date(fecha_fin)).toMillis();
+            DateTime.fromJSDate(new Date(suscripcion.fecha_fin)).toMillis();
 
           if (isFreeTrialExpired)
-            await this.suscripcionesService.updateSuscripcion(
+            suscripcion = await this.suscripcionesService.updateSuscripcion(
               isEmployer ? empresa_id : id,
               {
                 free_trial: false,
@@ -413,7 +397,7 @@ export class AuthController {
             );
         }
       } else
-        await this.suscripcionesService.updateSuscripcion(id, {
+        suscripcion = await this.suscripcionesService.updateSuscripcion(id, {
           fecha_fin: now.plus({ years: 1 }).toUTC().toJSDate(),
         });
 
@@ -464,13 +448,13 @@ export class AuthController {
           rol,
           isEmployer,
           suscripcion: {
-            free_trial,
-            status,
+            free_trial: suscripcion.free_trial,
+            status: suscripcion.status,
             next_payment_date:
               rol === 'ADMIN'
                 ? now.plus({ years: 1 }).toUTC().toJSDate()
-                : fecha_fin,
-            message_info,
+                : suscripcion.fecha_fin,
+            message_info: suscripcion.message_info,
             plan: {
               id: suscripcion.plan_id,
               valor_actual: suscripcion.plan.valor,
