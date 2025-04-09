@@ -36,6 +36,8 @@ import { SuscripcionCreation } from 'src/types/suscripciones.types';
 import { Usuario } from '@prisma/client';
 import { RecoverTokenService } from 'src/recover-token/recover-token.service';
 import { RecoverTokenGuard } from 'src/recover-token/recover-token.guard';
+import { MercadopagoService } from 'src/mercadopago/mercadopago.service';
+import { PreApprovalResponse } from 'mercadopago/dist/clients/preApproval/commonTypes';
 
 @Controller('auth')
 export class AuthController {
@@ -47,6 +49,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly hashService: HashService,
     private readonly suscripcionesService: SuscripcionesService,
+    private readonly mercadopago: MercadopagoService,
     private readonly planesService: PlanesService,
     private readonly recoverTokenService: RecoverTokenService,
   ) {}
@@ -193,7 +196,7 @@ export class AuthController {
       const { id, nombre, apellido, rol, empresa_id } = exists;
       const isEmployer = rol === 'INDIVIDUAL' && empresa_id ? true : false;
 
-      const suscripcion = await this.suscripcionesService.getByUsuarioId(
+      let suscripcion = await this.suscripcionesService.getByUsuarioId(
         isEmployer ? empresa_id : id,
       );
       if (!suscripcion)
@@ -201,7 +204,25 @@ export class AuthController {
           'Hay un conflicto con la suscripción del usuario.',
         );
 
-      const { free_trial, message_info, status, fecha_fin } = suscripcion;
+      const {
+        id: suscripcion_id,
+        free_trial,
+        message_info,
+        status,
+        fecha_fin,
+      } = suscripcion;
+
+      let extra: PreApprovalResponse['summarized'];
+      if (suscripcion_id)
+        extra = (await this.mercadopago.getPreapproval(suscripcion_id))
+          .summarized;
+
+      // Si summarized.semaphore tiene valor "red" y la suscripción no está pausada en la BD, la actualizamos
+      if (extra?.semaphore === 'red' && suscripcion.status !== 'paused')
+        suscripcion = await this.suscripcionesService.updateSuscripcion(
+          isEmployer ? empresa_id : id,
+          { status: 'paused', message_info: 'paused' },
+        );
 
       const now = DateTime.now();
 
@@ -276,6 +297,7 @@ export class AuthController {
               id: suscripcion.plan_id,
               valor_actual: suscripcion.plan.valor,
             },
+            extra,
           },
         }),
         {
@@ -305,6 +327,7 @@ export class AuthController {
               id: suscripcion.plan_id,
               valor_actual: suscripcion.plan.valor,
             },
+            extra,
           },
         },
       });
@@ -344,7 +367,7 @@ export class AuthController {
 
       const isEmployer = rol === 'INDIVIDUAL' && empresa_id ? true : false;
 
-      const suscripcion = await this.suscripcionesService.getByUsuarioId(
+      let suscripcion = await this.suscripcionesService.getByUsuarioId(
         isEmployer ? empresa_id : id,
       );
       if (!suscripcion)
@@ -352,7 +375,25 @@ export class AuthController {
           'No se encontró la suscripción del usuario en el sistema.',
         );
 
-      const { free_trial, status, message_info, fecha_fin } = suscripcion;
+      const {
+        id: suscripcion_id,
+        free_trial,
+        status,
+        message_info,
+        fecha_fin,
+      } = suscripcion;
+
+      let extra: PreApprovalResponse['summarized'];
+      if (suscripcion_id)
+        extra = (await this.mercadopago.getPreapproval(suscripcion_id))
+          .summarized;
+
+      // Si summarized.semaphore tiene valor "red" y la suscripción no está pausada en la BD, la actualizamos
+      if (extra?.semaphore === 'red' && suscripcion.status !== 'paused')
+        suscripcion = await this.suscripcionesService.updateSuscripcion(
+          isEmployer ? empresa_id : id,
+          { status: 'paused', message_info: 'paused' },
+        );
 
       const now = DateTime.now();
 
@@ -434,6 +475,7 @@ export class AuthController {
               id: suscripcion.plan_id,
               valor_actual: suscripcion.plan.valor,
             },
+            extra,
           },
         },
         domain,
@@ -525,8 +567,6 @@ export class AuthController {
       });
 
       const url = request.headers.referer;
-
-      console.log(url);
 
       return await this.recoverTokenService.sendRecoverEmail(url, email, token);
     } catch (e) {

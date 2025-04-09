@@ -63,7 +63,12 @@ export class SuscripcionesController {
           'No se encontró la suscripción para el usuario.',
         );
 
-      return response.json(suscripcion);
+      if (!suscripcion.id) return response.json(suscripcion);
+
+      const { id } = suscripcion;
+      const { summarized } = await this.mercadopago.getPreapproval(id);
+
+      return response.json({ ...suscripcion, extra: summarized });
     } catch (e) {
       if (e) throw e;
 
@@ -77,8 +82,9 @@ export class SuscripcionesController {
   @Version('1')
   @HttpCode(HttpStatus.NO_CONTENT)
   async getNotifications(@Body() notification: MPNotification) {
-    this.logger.debug(notification);
     const { type, data } = notification;
+
+    this.logger.debug(notification);
 
     if (type === 'subscription_preapproval') {
       const preapproval = await this.mercadopago.getPreapproval(data.id);
@@ -88,7 +94,10 @@ export class SuscripcionesController {
         external_reference: usuario_id,
         next_payment_date,
         payment_method_id,
+        summarized,
       } = preapproval;
+
+      this.logger.debug(preapproval);
 
       const STATUS = status as STATUS;
 
@@ -100,6 +109,8 @@ export class SuscripcionesController {
         payment_method_id !== 'account_money'
           ? true
           : false;
+
+      const { semaphore } = summarized;
 
       const actualSuscripcion = await this.service.getByUsuarioId(usuario_id);
 
@@ -117,13 +128,21 @@ export class SuscripcionesController {
       const UPDATE_PAYLOAD: Partial<Suscripcion> = {
         id,
         free_trial: monthHasPast ? false : paymentMethodFailure ? true : false,
-        status: paymentMethodFailure ? 'pending' : STATUS,
+        status: paymentMethodFailure
+          ? 'pending'
+          : semaphore === 'red' && STATUS !== 'cancelled'
+            ? 'paused'
+            : STATUS,
         fecha_fin: DateTime.fromISO(next_payment_date).toUTC().toJSDate(),
         message_info: paymentMethodFailure
           ? 'disabled'
-          : status === 'cancelled'
-            ? 'cancelled'
-            : 'disabled',
+          : semaphore === 'yellow' && STATUS === 'authorized'
+            ? 'payment_warning'
+            : STATUS === 'cancelled'
+              ? 'cancelled'
+              : STATUS === 'paused'
+                ? 'paused'
+                : 'disabled',
       };
       await this.service.updateSuscripcion(usuario_id, UPDATE_PAYLOAD);
     }

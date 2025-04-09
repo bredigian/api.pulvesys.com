@@ -194,12 +194,15 @@ model Plan {
 enum STATUS {
   pending
   authorized
+  paused
   cancelled
 }
 
 enum SUBSCRIPTION_MESSAGE {
   welcome
   warning
+  payment_warning
+  paused
   cancelled
   disabled
 }

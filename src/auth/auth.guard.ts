@@ -69,7 +69,7 @@ export class AuthGuard implements CanActivate {
 
     const isEmployer = rol === 'INDIVIDUAL' && empresa_id ? true : false;
 
-    const suscripcion = await this.suscripcionesService.getByUsuarioId(
+    let suscripcion = await this.suscripcionesService.getByUsuarioId(
       isEmployer ? empresa_id : usuario_id,
     );
     if (!suscripcion) {
@@ -118,7 +118,16 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException(
           'No se encontró la suscripción del usuario en Mercado Pago.',
         );
-      const { status, next_payment_date } = preapproval;
+
+      const { status, next_payment_date, summarized: extra } = preapproval;
+
+      // Si summarized.semaphore tiene valor "red" y la suscripción no está pausada en la BD, la actualizamos
+      if (extra?.semaphore === 'red' && suscripcion.status !== 'paused')
+        suscripcion = await this.suscripcionesService.updateSuscripcion(
+          isEmployer ? empresa_id : id,
+          { status: 'paused', message_info: 'paused' },
+        );
+
       const endDateFromMP = new Date(next_payment_date);
 
       // Si por algún motivo el webhook de MP falla y no actualiza la DB
@@ -149,6 +158,7 @@ export class AuthGuard implements CanActivate {
               id: plan.id,
               valor_actual: plan.valor,
             },
+            extra,
           },
         }),
         {

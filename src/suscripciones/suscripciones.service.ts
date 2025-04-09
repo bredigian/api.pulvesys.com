@@ -22,6 +22,9 @@ export class SuscripcionesService {
     return await this.prisma.suscripcion.update({
       where: { usuario_id },
       data,
+      include: {
+        plan: true,
+      },
     });
   }
 
