@@ -1,6 +1,5 @@
 import { IsPhoneNumber, IsString, IsUUID } from 'class-validator';
-
-import { Plan } from '@prisma/client';
+import { Plan, Usuario } from '@prisma/client';
 
 export class AuthDto {
   @IsString()
@@ -26,4 +25,9 @@ export class CreateUserDto extends AuthDto {
 export class SignupDto extends CreateUserDto {
   @IsUUID()
   plan_id: Plan['id'];
+}
+
+export class UpdateUserDto extends CreateUserDto {
+  @IsUUID()
+  id: Usuario['id'];
 }

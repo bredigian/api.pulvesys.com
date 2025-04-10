@@ -18,6 +18,13 @@ export class UsuariosService {
     return await this.prisma.usuario.create({ data: data as Usuario });
   }
 
+  async updateUser(empresa_id: Usuario['id'], data: Partial<Usuario>) {
+    return await this.prisma.usuario.update({
+      where: { id: data.id, empresa_id },
+      data: data as Usuario,
+    });
+  }
+
   async findByUsername(nombre_usuario: Usuario['nombre_usuario']) {
     return await this.prisma.usuario.findUnique({ where: { nombre_usuario } });
   }
@@ -39,5 +46,9 @@ export class UsuariosService {
       where: { id },
       data: { contrasena: password },
     });
+  }
+
+  async deleteById(empresa_id: Usuario['id'], id: Usuario['id']) {
+    return await this.prisma.usuario.delete({ where: { id, empresa_id } });
   }
 }
