@@ -2,6 +2,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { HashService } from 'src/lib/hash.service';
 import { JwtModule } from '@nestjs/jwt';
+import { LogSuscripcionesService } from 'src/log-suscripciones/log-suscripciones.service';
 import { MercadopagoService } from 'src/mercadopago/mercadopago.service';
 import { Module } from '@nestjs/common';
 import { PlanesService } from 'src/planes/planes.service';
@@ -29,6 +30,7 @@ import { UsuariosService } from 'src/usuarios/usuarios.service';
     HashService,
     PrismaService,
     SuscripcionesService,
+    LogSuscripcionesService,
     MercadopagoService,
     PlanesService,
     RecoverTokenService,

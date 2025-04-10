@@ -38,6 +38,7 @@ import { RecoverTokenService } from 'src/recover-token/recover-token.service';
 import { RecoverTokenGuard } from 'src/recover-token/recover-token.guard';
 import { MercadopagoService } from 'src/mercadopago/mercadopago.service';
 import { PreApprovalResponse } from 'mercadopago/dist/clients/preApproval/commonTypes';
+import { LogSuscripcionesService } from 'src/log-suscripciones/log-suscripciones.service';
 
 @Controller('auth')
 export class AuthController {
@@ -49,6 +50,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly hashService: HashService,
     private readonly suscripcionesService: SuscripcionesService,
+    private readonly logSuscripcionesService: LogSuscripcionesService,
     private readonly mercadopago: MercadopagoService,
     private readonly planesService: PlanesService,
     private readonly recoverTokenService: RecoverTokenService,
@@ -90,6 +92,13 @@ export class AuthController {
       };
       const { free_trial, status, fecha_fin, message_info } =
         await this.suscripcionesService.createSuscripcion(SUSCRIPCION_PAYLOAD);
+
+      // Crea un registro en el LOG de las suscripciones con MONTO 0 ya que es la prueba gratita
+      await this.logSuscripcionesService.createLog({
+        usuario_id: id,
+        fecha: now.toUTC().toJSDate(),
+        monto: 0,
+      });
 
       const { access_token, refresh_token } =
         await this.authService.generateTokens(id);

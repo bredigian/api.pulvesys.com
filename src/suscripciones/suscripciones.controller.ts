@@ -32,6 +32,7 @@ import { MessageInfoDTO, SuscripcionDTO } from './suscripcion.dto';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { STATUS, Suscripcion } from '@prisma/client';
 import { DateTime } from 'luxon';
+import { LogSuscripcionesService } from 'src/log-suscripciones/log-suscripciones.service';
 
 @Controller('suscripciones')
 export class SuscripcionesController {
@@ -39,6 +40,7 @@ export class SuscripcionesController {
 
   constructor(
     private readonly service: SuscripcionesService,
+    private readonly logSuscripcionesService: LogSuscripcionesService,
     private readonly mercadopago: MercadopagoService,
     private readonly planesService: PlanesService,
     private readonly usuariosService: UsuariosService,
@@ -95,6 +97,7 @@ export class SuscripcionesController {
         next_payment_date,
         payment_method_id,
         summarized,
+        auto_recurring,
       } = preapproval;
 
       this.logger.debug(preapproval);
@@ -145,6 +148,12 @@ export class SuscripcionesController {
                 : 'disabled',
       };
       await this.service.updateSuscripcion(usuario_id, UPDATE_PAYLOAD);
+
+      await this.logSuscripcionesService.createLog({
+        usuario_id,
+        fecha: DateTime.now().toUTC().toJSDate(),
+        monto: auto_recurring.transaction_amount,
+      });
     }
   }
 
