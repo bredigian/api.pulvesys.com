@@ -1,0 +1,15 @@
+version: '3.9'
+name: pulverizaciones-app
+services:
+  db:
+    image: postgres:17.2-alpine
+    container_name: pulverizaciones-database_develop
+    ports:
+      - 8765:6543
+      - 7654:5432
+    env_file:
+      - .env.development
+    volumes:
+      - pulverizaciones-data_develop:/var/lib/postgresql/data/
+volumes:
+  pulverizaciones-data_develop:

@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   InternalServerErrorException,
   Post,
   Put,
@@ -20,17 +21,37 @@ import { UUID } from 'crypto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { HistorialService } from 'src/historial/historial.service';
+import { Log } from '@prisma/client';
 
 @Controller('tratamientos')
 export class TratamientosController {
-  constructor(private readonly service: TratamientosService) {}
+  constructor(
+    private readonly service: TratamientosService,
+    private readonly usuariosService: UsuariosService,
+    private readonly jwtService: JwtService,
+    private readonly logService: HistorialService,
+  ) {}
 
   @Get()
   @Version('1')
   @UseGuards(AuthGuard)
-  async getAll(@Res() response: Response) {
+  async getAll(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const data = await this.service.getAll();
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const data = await this.service.getAll(
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -48,9 +69,31 @@ export class TratamientosController {
   async addTratamiento(
     @Res() response: Response,
     @Body() data: TratamientoDTO,
+    @Headers('Authorization') authorization: string,
   ) {
     try {
-      const tratamiento = await this.service.addTratamiento(data);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const tratamiento = await this.service.addTratamiento({
+        ...data,
+        usuario_id: rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      });
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'TRATAMIENTO',
+        description: `Se agregó el tipo de tratamiento ${tratamiento.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(tratamiento);
     } catch (error) {
       if (error) throw error;
@@ -68,9 +111,31 @@ export class TratamientosController {
   async editTratamiento(
     @Res() response: Response,
     @Body() data: CultivoStrictDTO,
+    @Headers('Authorization') authorization: string,
   ) {
     try {
-      const updated = await this.service.editTratamiento(data);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const updated = await this.service.editTratamiento(
+        data,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'TRATAMIENTO',
+        description: `Se modificó el tipo de tratamiento ${updated.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -85,11 +150,36 @@ export class TratamientosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteById(@Res() response: Response, @Body() data: { id: UUID }) {
+  async deleteById(
+    @Res() response: Response,
+    @Body() data: { id: UUID },
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const { id } = data;
+      const { id: tratamiento_id } = data;
 
-      const deleted = await this.service.deleteById(id);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const deleted = await this.service.deleteById(
+        tratamiento_id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'TRATAMIENTO',
+        description: `Se eliminó el tipo de tratamiento ${deleted.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

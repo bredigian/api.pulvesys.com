@@ -1,29 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Producto } from '@prisma/client';
+import { Producto, Usuario } from '@prisma/client';
 import { UUID } from 'crypto';
 
 @Injectable()
 export class ProductosService {
   constructor(private prisma: PrismaService) {}
 
-  async getAll() {
-    return await this.prisma.producto.findMany();
+  async getAll(usuario_id: Usuario['id']) {
+    return await this.prisma.producto.findMany({ where: { usuario_id } });
   }
 
-  async addProducto(data: Producto) {
-    return await this.prisma.producto.create({ data });
+  async addProducto(data: Partial<Producto>) {
+    return await this.prisma.producto.create({ data: data as Producto });
   }
 
-  async findById(id: UUID) {
-    return await this.prisma.producto.findUnique({ where: { id } });
+  async findById(id: UUID, usuario_id: Usuario['id']) {
+    return await this.prisma.producto.findUnique({ where: { id, usuario_id } });
   }
 
-  async editProducto(data: Producto) {
-    return await this.prisma.producto.update({ where: { id: data.id }, data });
+  async editProducto(data: Partial<Producto>, usuario_id: Usuario['id']) {
+    return await this.prisma.producto.update({
+      where: { id: data.id, usuario_id },
+      data,
+    });
   }
 
-  async deleteById(id: UUID) {
-    return await this.prisma.producto.delete({ where: { id } });
+  async deleteById(id: UUID, usuario_id: Usuario['id']) {
+    return await this.prisma.producto.delete({ where: { id, usuario_id } });
   }
 }

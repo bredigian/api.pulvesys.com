@@ -5,6 +5,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   InternalServerErrorException,
   Patch,
   Post,
@@ -23,6 +24,10 @@ import { CoordinadasService } from 'src/coordinadas/coordinadas.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { Log } from '@prisma/client';
+import { HistorialService } from 'src/historial/historial.service';
 
 @Controller('campos')
 export class CamposController {
@@ -30,14 +35,28 @@ export class CamposController {
     private readonly service: CamposService,
     private readonly lotesService: LotesService,
     private readonly coordinadaService: CoordinadasService,
+    private readonly usuariosService: UsuariosService,
+    private readonly jwtService: JwtService,
+    private readonly logService: HistorialService,
   ) {}
 
   @Get()
   @Version('1')
   @UseGuards(AuthGuard)
-  async getAll(@Res() response: Response) {
+  async getAll(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const data = await this.service.getAll();
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const data = await this.service.getAll(
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -52,11 +71,22 @@ export class CamposController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async addCampo(@Res() response: Response, @Body() data: CampoDTO) {
+  async addCampo(
+    @Res() response: Response,
+    @Body() data: CampoDTO,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
       const campo = await this.service.addCampo({
         id: undefined,
         nombre: data.nombre,
+        usuario_id: rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
       });
 
       const { Lote } = data;
@@ -78,6 +108,17 @@ export class CamposController {
         }
       }
 
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'UBICACION',
+        description: `Se agregó la ubicación ${campo.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(campo);
     } catch (error) {
       if (error) throw error;
@@ -91,9 +132,23 @@ export class CamposController {
   @Patch()
   @Version('1')
   @UseGuards(AuthGuard)
-  async editCampo(@Res() response: Response, @Body() data: CampoDTO) {
+  async editCampo(
+    @Res() response: Response,
+    @Body() data: CampoDTO,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      await this.service.editCampo(data);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const edittedCampo = await this.service.editCampo(
+        data,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
       const { Lote } = data;
       for (const lote of Lote) {
         if ('id' in lote) {
@@ -112,6 +167,18 @@ export class CamposController {
           color: lote.color,
           campo_id: data.id,
         });
+
+        const PAYLOAD_LOG: Log = {
+          usuario_id: id,
+          empresa_id: empresa_id ?? null,
+          type: 'UBICACION',
+          description: `Modificando la ubicación ${edittedCampo.nombre}, se agregó el lote ${loteCreated.nombre}.`,
+          id: undefined,
+          createdAt: undefined,
+        };
+
+        await this.logService.createLog(PAYLOAD_LOG);
+
         for (const zona of lote.zona) {
           await this.coordinadaService.addCoordinada({
             id: undefined,
@@ -122,7 +189,22 @@ export class CamposController {
         }
       }
 
-      const updated = await this.service.findById(data.id);
+      const updated = await this.service.findById(
+        data.id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'UBICACION',
+        description: `Se modificó la ubicación ${updated.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -137,11 +219,36 @@ export class CamposController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteById(@Res() response: Response, @Body() data: { id: UUID }) {
+  async deleteById(
+    @Res() response: Response,
+    @Body() data: { id: UUID },
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const { id } = data;
+      const { id: campo_id } = data;
 
-      const deleted = await this.service.deleteById(id);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const deleted = await this.service.deleteById(
+        campo_id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'UBICACION',
+        description: `Se eliminó la ubicación ${deleted.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -163,11 +270,32 @@ export class CamposController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteLoteById(@Res() response: Response, @Body() data: { id: UUID }) {
+  async deleteLoteById(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+    @Body() data: { id: UUID },
+  ) {
     try {
-      const { id } = data;
+      const { id: lote_id } = data;
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization.substring(7),
+      );
+      const { id, empresa_id } =
+        await this.usuariosService.findById(usuario_id);
 
-      const deletedLote = await this.lotesService.deleteById(id);
+      const deletedLote = await this.lotesService.deleteById(lote_id);
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'UBICACION',
+        description: `Se eliminó el lote ${deletedLote.nombre} de la ubicación ${deletedLote.campo.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deletedLote);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

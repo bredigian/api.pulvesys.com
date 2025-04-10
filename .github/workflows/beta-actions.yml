@@ -13,6 +13,14 @@ jobs:
       JWT_SECRET_KEY: ${{secrets.JWT_SECRET_KEY}}
       PORT: ${{secrets.DEVELOPMENT_PORT}}
       NODE_ENV: 'beta'
+      MERCADO_PAGO_ACCESS_TOKEN: ${{secrets.DEVELOP_MERCADO_PAGO_ACCESS_TOKEN}}
+      APP_URL: ${{secrets.DEVELOP_APP_URL}}
+      SMTP_HOST: ${{secrets.SMTP_HOST}}
+      SMTP_PORT: ${{secrets.SMTP_PORT}}
+      SMTP_USER: ${{secrets.SMTP_USER}}
+      SMTP_PASSWORD: ${{secrets.SMTP_PASSWORD}}
+      MAX_EMPLOYERS_ALLOWED: ${{secrets.MAX_EMPLOYERS_ALLOWED}}
+      MAX_CONCURRENT_SESIONES: ${{secrets.MAX_CONCURRENT_SESIONES}}
     strategy:
       matrix:
         node-version: [22.x]

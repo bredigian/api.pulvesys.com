@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   InternalServerErrorException,
   Post,
   Put,
@@ -20,17 +21,37 @@ import { UUID } from 'crypto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { Log } from '@prisma/client';
+import { HistorialService } from 'src/historial/historial.service';
 
 @Controller('productos')
 export class ProductosController {
-  constructor(private readonly service: ProductosService) {}
+  constructor(
+    private readonly service: ProductosService,
+    private readonly usuariosService: UsuariosService,
+    private readonly jwtService: JwtService,
+    private readonly logService: HistorialService,
+  ) {}
 
   @Get()
   @Version('1')
   @UseGuards(AuthGuard)
-  async getAll(@Res() response: Response) {
+  async getAll(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const data = await this.service.getAll();
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const data = await this.service.getAll(
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -45,9 +66,34 @@ export class ProductosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async addProducto(@Res() response: Response, @Body() data: ProductoDTO) {
+  async addProducto(
+    @Res() response: Response,
+    @Body() data: ProductoDTO,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const producto = await this.service.addProducto(data);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const producto = await this.service.addProducto({
+        ...data,
+        usuario_id: rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      });
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'PRODUCTO',
+        description: `Se agregó el producto ${producto.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(producto);
     } catch (error) {
       if (error) throw error;
@@ -65,9 +111,31 @@ export class ProductosController {
   async editProducto(
     @Res() response: Response,
     @Body() data: ProductoStrictDTO,
+    @Headers('Authorization') authorization: string,
   ) {
     try {
-      const updated = await this.service.editProducto(data);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const updated = await this.service.editProducto(
+        data,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'PRODUCTO',
+        description: `Se modificó el producto ${updated.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -82,11 +150,36 @@ export class ProductosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteById(@Res() response: Response, @Body() data: { id: UUID }) {
+  async deleteById(
+    @Res() response: Response,
+    @Body() data: { id: UUID },
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const { id } = data;
+      const { id: producto_id } = data;
 
-      const deleted = await this.service.deleteById(id);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const deleted = await this.service.deleteById(
+        producto_id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'PRODUCTO',
+        description: `Se eliminó el producto ${deleted.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

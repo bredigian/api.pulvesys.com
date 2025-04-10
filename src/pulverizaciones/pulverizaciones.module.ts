@@ -3,13 +3,17 @@ import { CamposService } from 'src/campos/campos.service';
 import { ConsumoProductoService } from 'src/consumo-producto/consumo-producto.service';
 import { CultivosService } from 'src/cultivos/cultivos.service';
 import { DetallesService } from 'src/detalles/detalles.service';
+import { HistorialService } from 'src/historial/historial.service';
+import { MercadopagoService } from 'src/mercadopago/mercadopago.service';
 import { Module } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductosService } from 'src/productos/productos.service';
 import { PulverizacionesController } from './pulverizaciones.controller';
 import { PulverizacionesService } from './pulverizaciones.service';
-import { TratamientosService } from 'src/tratamientos/tratamientos.service';
 import { SesionesService } from 'src/sesiones/sesiones.service';
+import { SuscripcionesService } from 'src/suscripciones/suscripciones.service';
+import { TratamientosService } from 'src/tratamientos/tratamientos.service';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Module({
   controllers: [PulverizacionesController],
@@ -24,6 +28,10 @@ import { SesionesService } from 'src/sesiones/sesiones.service';
     ProductosService,
     PrismaService,
     SesionesService,
+    UsuariosService,
+    HistorialService,
+    MercadopagoService,
+    SuscripcionesService,
   ],
 })
 export class PulverizacionesModule {}

@@ -1,10 +1,10 @@
 import { HashService } from 'src/lib/hash.service';
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { Usuario } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
-import { randomUUID, UUID } from 'node:crypto';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { Tokens } from 'src/types/auth.types';
+import { Usuario } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class AuthService {
@@ -13,10 +13,6 @@ export class AuthService {
     private hashService: HashService,
     private jwtService: JwtService,
   ) {}
-
-  async findByUsername(nombre_usuario: Usuario['nombre_usuario']) {
-    return await this.prisma.usuario.findUnique({ where: { nombre_usuario } });
-  }
 
   async verifyPassword(
     password: Usuario['contrasena'],

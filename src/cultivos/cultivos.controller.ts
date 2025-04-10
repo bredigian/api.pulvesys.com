@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
   Delete,
   Get,
+  Headers,
   InternalServerErrorException,
   Post,
   Put,
@@ -19,17 +21,38 @@ import { UUID } from 'crypto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { HistorialService } from 'src/historial/historial.service';
+import { Log } from '@prisma/client';
 
 @Controller('cultivos')
 export class CultivosController {
-  constructor(private readonly service: CultivosService) {}
+  constructor(
+    private readonly service: CultivosService,
+    private readonly jwtService: JwtService,
+    private readonly usuariosService: UsuariosService,
+    private readonly logService: HistorialService,
+  ) {}
 
   @Get()
   @Version('1')
   @UseGuards(AuthGuard)
-  async getAll(@Res() response: Response) {
+  async getAll(
+    @Res() response: Response,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const data = await this.service.getAll();
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const data = await this.service.getAll(
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
       return response.json(data);
     } catch (error) {
       if (error) throw error;
@@ -44,9 +67,34 @@ export class CultivosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async addCultivo(@Res() response: Response, @Body() data: CultivoDTO) {
+  async addCultivo(
+    @Res() response: Response,
+    @Body() data: CultivoDTO,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const cultivo = await this.service.addCultivo(data);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const cultivo = await this.service.addCultivo({
+        ...data,
+        usuario_id: rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      });
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'CULTIVO',
+        description: `Se agregó el cultivo ${cultivo.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(cultivo);
     } catch (error) {
       if (error) throw error;
@@ -61,9 +109,34 @@ export class CultivosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async editCultivo(@Res() response: Response, @Body() data: CultivoStrictDTO) {
+  async editCultivo(
+    @Res() response: Response,
+    @Body() data: CultivoStrictDTO,
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const updated = await this.service.editCultivo(data);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const updated = await this.service.editCultivo(
+        data,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'CULTIVO',
+        description: `Se modificó el cultivo ${updated.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(updated);
     } catch (error) {
       if (error) throw error;
@@ -78,11 +151,36 @@ export class CultivosController {
   @Version('1')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true }))
-  async deleteById(@Res() response: Response, @Body() data: { id: UUID }) {
+  async deleteById(
+    @Res() response: Response,
+    @Body() data: { id: UUID },
+    @Headers('Authorization') authorization: string,
+  ) {
     try {
-      const { id } = data;
+      const { id: cultivo_id } = data;
 
-      const deleted = await this.service.deleteById(id);
+      const { sub: usuario_id } = await this.jwtService.decode(
+        authorization?.substring(7),
+      );
+      const { id, empresa_id, rol } =
+        await this.usuariosService.findById(usuario_id);
+
+      const deleted = await this.service.deleteById(
+        cultivo_id,
+        rol === 'INDIVIDUAL' && empresa_id ? empresa_id : id,
+      );
+
+      const PAYLOAD_LOG: Log = {
+        usuario_id: id,
+        empresa_id: empresa_id ?? null,
+        type: 'CULTIVO',
+        description: `Se eliminó el cultivo ${deleted.nombre}.`,
+        id: undefined,
+        createdAt: undefined,
+      };
+
+      await this.logService.createLog(PAYLOAD_LOG);
+
       return response.json(deleted);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

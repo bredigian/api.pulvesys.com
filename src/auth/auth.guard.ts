@@ -2,24 +2,29 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-
-import { JwtService } from '@nestjs/jwt';
-import { isUUID } from 'class-validator';
-import { Request, Response } from 'express';
-import { SesionesService } from 'src/sesiones/sesiones.service';
-import { Tokens } from 'src/types/auth.types';
 import { Hostname, TEnvironment } from 'src/types/environment.types';
+import { Request, Response } from 'express';
+
+import { DateTime } from 'luxon';
+import { JwtService } from '@nestjs/jwt';
+import { MercadopagoService } from 'src/mercadopago/mercadopago.service';
+import { STATUS } from '@prisma/client';
+import { SesionesService } from 'src/sesiones/sesiones.service';
+import { SuscripcionesService } from 'src/suscripciones/suscripciones.service';
+import { Tokens } from 'src/types/auth.types';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  private logger = new Logger('AuthGuard Logger');
-
   constructor(
     private jwtService: JwtService,
     private sesionesService: SesionesService,
+    private usuariosService: UsuariosService,
+    private suscripcionesService: SuscripcionesService,
+    private mercadopago: MercadopagoService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -58,8 +63,128 @@ export class AuthGuard implements CanActivate {
       updatedExpireIn = new Date(updated_expire_in);
     }
 
+    const { sub: usuario_id } = await this.jwtService.decode(access_token);
+
+    const { empresa_id, rol } = await this.usuariosService.findById(usuario_id);
+
+    const isEmployer = rol === 'INDIVIDUAL' && empresa_id ? true : false;
+
+    let suscripcion = await this.suscripcionesService.getByUsuarioId(
+      isEmployer ? empresa_id : usuario_id,
+    );
+    if (!suscripcion) {
+      throw new UnauthorizedException(
+        'No se encontró la suscripción del usuario en el sistema.',
+      );
+    }
+
+    const endDateFromDb = new Date(suscripcion.fecha_fin);
+
+    const now = DateTime.now();
+
+    if (rol !== 'ADMIN') {
+      if (suscripcion.status === 'pending') {
+        const isFreeTrialExpired =
+          now.toMillis() > DateTime.fromJSDate(endDateFromDb).toMillis();
+
+        if (isFreeTrialExpired)
+          suscripcion = await this.suscripcionesService.updateSuscripcion(
+            isEmployer ? empresa_id : usuario_id,
+            {
+              free_trial: false,
+              message_info: 'warning',
+            },
+          );
+      }
+    } else
+      suscripcion = await this.suscripcionesService.updateSuscripcion(
+        usuario_id,
+        {
+          fecha_fin: now.plus({ years: 1 }).toUTC().toJSDate(),
+        },
+      );
     const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
     const domain = Hostname[ENVIRONMENT];
+
+    if (rol !== 'ADMIN' && suscripcion.id) {
+      const preapproval = await this.mercadopago.getPreapproval(suscripcion.id);
+      if (!preapproval)
+        throw new UnauthorizedException(
+          'No se encontró la suscripción del usuario en Mercado Pago.',
+        );
+
+      const { status, next_payment_date, summarized: extra } = preapproval;
+
+      // Si status de MP es "paused" y en la BD tiene un valor distinto, lo actualizamos.
+      if (status === 'paused' && suscripcion.status !== 'paused')
+        suscripcion = await this.suscripcionesService.updateSuscripcion(
+          isEmployer ? empresa_id : suscripcion.id,
+          { status: 'paused', message_info: 'paused' },
+        );
+
+      const endDateFromMP = new Date(next_payment_date);
+
+      // Si por algún motivo el webhook de MP falla y no actualiza la DB
+      // y los datos de la DB no coinciden con MP, actualiza la DB
+
+      if (
+        status !== suscripcion.status ||
+        endDateFromMP.getTime() !== endDateFromDb.getTime()
+      )
+        await this.suscripcionesService.updateSuscripcion(
+          isEmployer ? empresa_id : usuario_id,
+          {
+            status: status as STATUS,
+            fecha_fin: new Date(next_payment_date),
+          },
+        );
+
+      response.cookie(
+        'userdata',
+        JSON.stringify({
+          ...storedSession.usuario,
+          suscripcion: {
+            free_trial: suscripcion.free_trial,
+            status,
+            next_payment_date,
+            message_info: suscripcion.message_info,
+            plan: {
+              id: suscripcion.plan.id,
+              valor_actual: suscripcion.plan.valor,
+            },
+            extra,
+          },
+        }),
+        {
+          expires: updatedExpireIn,
+          domain,
+        },
+      );
+    } else {
+      response.cookie(
+        'userdata',
+        JSON.stringify({
+          ...storedSession.usuario,
+          suscripcion: {
+            free_trial: suscripcion.free_trial,
+            status: suscripcion.status,
+            next_payment_date:
+              rol === 'ADMIN'
+                ? now.plus({ years: 1 }).toUTC().toJSDate()
+                : suscripcion.fecha_fin,
+            message_info: suscripcion.message_info,
+            plan: {
+              id: suscripcion.plan.id,
+              valor_actual: suscripcion.plan.valor,
+            },
+          },
+        }),
+        {
+          expires: updatedExpireIn,
+          domain,
+        },
+      );
+    }
 
     response.cookie('refresh_token', updatedRefreshToken, {
       httpOnly: true,
@@ -69,10 +194,6 @@ export class AuthGuard implements CanActivate {
       domain,
     });
     response.cookie('access_token', updatedAccessToken, {
-      expires: updatedExpireIn,
-      domain,
-    });
-    response.cookie('userdata', JSON.stringify(storedSession.usuario), {
       expires: updatedExpireIn,
       domain,
     });

@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "SUBSCRIPTION_MESSAGE" ADD VALUE 'paused';

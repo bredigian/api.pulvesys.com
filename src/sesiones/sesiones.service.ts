@@ -1,19 +1,19 @@
-import { Sesion, Usuario } from '@prisma/client';
-
-import { DateTime } from 'luxon';
 import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Sesion, Usuario } from '@prisma/client';
+import { UUID, randomUUID } from 'node:crypto';
+
+import { DateTime } from 'luxon';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { randomUUID, UUID } from 'node:crypto';
 import { Tokens } from 'src/types/auth.types';
 
 @Injectable()
 export class SesionesService {
-  private MAX_CONCURRENT_SESIONES = 3;
+  private MAX_CONCURRENT_SESIONES = process.env.MAX_CONCURRENT_SESIONES;
 
   constructor(
     private prisma: PrismaService,
@@ -25,7 +25,14 @@ export class SesionesService {
       where: { access_token },
       include: {
         usuario: {
-          select: { nombre_usuario: true, nombre: true, apellido: true },
+          select: {
+            id: true,
+            nombre_usuario: true,
+            nombre: true,
+            apellido: true,
+            rol: true,
+            empresa_id: true,
+          },
         },
       },
     });
@@ -78,6 +85,10 @@ export class SesionesService {
         expireIn: { lte: DateTime.now().toUTC().toJSDate() },
       },
     });
+  }
+
+  async clearAllByUsuarioId(id: Usuario['id']) {
+    return await this.prisma.sesion.deleteMany({ where: { usuario_id: id } });
   }
 
   async refreshTokens(refresh_token: Sesion['refresh_token']): Promise<Tokens> {

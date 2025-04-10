@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -23,6 +17,8 @@ model Pulverizacion {
   ConsumoProducto ConsumoProducto[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+  usuario_id      String
+  usuario         Usuario           @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 }
 
 model Detalle {
@@ -52,6 +48,8 @@ model Producto {
   pulverizaciones Pulverizacion[]   @relation("PulverizacionProductos")
   Aplicacion      Aplicacion[]
   ConsumoProducto ConsumoProducto[]
+  usuario_id      String
+  usuario         Usuario           @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 }
 
 model Aplicacion {
@@ -75,10 +73,12 @@ model ConsumoProducto {
 }
 
 model Campo {
-  id      String    @id @unique @default(uuid())
-  nombre  String
-  Detalle Detalle[]
-  Lote    Lote[]
+  id         String    @id @unique @default(uuid())
+  nombre     String
+  Detalle    Detalle[]
+  Lote       Lote[]
+  usuario_id String
+  usuario    Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 }
 
 model Lote {
@@ -100,24 +100,56 @@ model Coordinada {
 }
 
 model Cultivo {
-  id      String    @id @unique @default(uuid())
-  nombre  String
-  Detalle Detalle[]
+  id         String    @id @unique @default(uuid())
+  nombre     String
+  Detalle    Detalle[]
+  usuario_id String
+  usuario    Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 }
 
 model TipoTratamiento {
-  id      String    @id @unique @default(uuid())
-  nombre  String
-  Detalle Detalle[]
+  id         String    @id @unique @default(uuid())
+  nombre     String
+  Detalle    Detalle[]
+  usuario_id String
+  usuario    Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+enum USUARIO_ROL {
+  ADMIN
+  EMPRESA
+  INDIVIDUAL
 }
 
 model Usuario {
-  id             String   @id @unique @default(uuid())
-  nombre_usuario String   @unique
-  contrasena     String
-  nombre         String
-  apellido       String
-  Sesion         Sesion[]
+  id              String            @id @unique @default(uuid())
+  empresa_id      String?
+  nombre_usuario  String            @unique
+  email           String            @unique
+  contrasena      String
+  nombre          String
+  apellido        String
+  nro_telefono    String
+  rol             USUARIO_ROL
+  Sesion          Sesion[]
+  TipoTratamiento TipoTratamiento[]
+  Pulverizacion   Pulverizacion[]
+  Producto        Producto[]
+  Campo           Campo[]
+  Cultivo         Cultivo[]
+  Log             Log[]
+  Suscripcion     Suscripcion[]
+  SuscripcionLog  SuscripcionLog[]
+  RecoverToken    RecoverToken[]
+}
+
+model RecoverToken {
+  id         String   @id @unique @default(uuid())
+  usuario_id String
+  usuario    Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  token      String   @unique
+  createdAt  DateTime @default(now())
+  expireIn   DateTime
 }
 
 model Sesion {
@@ -129,4 +161,70 @@ model Sesion {
   createdAt     DateTime @default(now())
   expireIn      DateTime
   updatedAt     DateTime @updatedAt
+}
+
+enum LOG {
+  PULVERIZACION
+  PRODUCTO
+  CULTIVO
+  TRATAMIENTO
+  UBICACION
+  USUARIO
+  SUSCRIPCION
+}
+
+model Log {
+  id          String   @id @unique @default(uuid())
+  type        LOG
+  description String
+  usuario_id  String?
+  empresa_id  String?
+  usuario     Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+}
+
+model Plan {
+  id          String        @id @unique @default(uuid())
+  nombre      USUARIO_ROL
+  descripcion String[]
+  valor       Float
+  Suscripcion Suscripcion[]
+}
+
+enum STATUS {
+  pending
+  authorized
+  paused
+  cancelled
+}
+
+enum SUBSCRIPTION_MESSAGE {
+  welcome
+  warning
+  payment_warning
+  paused
+  cancelled
+  disabled
+}
+
+model Suscripcion {
+  usuario_id   String               @id @unique
+  id           String?
+  plan_id      String
+  plan         Plan                 @relation(fields: [plan_id], references: [id])
+  usuario      Usuario              @relation(fields: [usuario_id], references: [id])
+  fecha_fin    DateTime
+  free_trial   Boolean
+  status       STATUS
+  message_info SUBSCRIPTION_MESSAGE
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model SuscripcionLog {
+  id         String   @id @unique @default(uuid())
+  fecha      DateTime
+  monto      Float
+  usuario_id String
+  usuario    Usuario  @relation(fields: [usuario_id], references: [id])
 }
