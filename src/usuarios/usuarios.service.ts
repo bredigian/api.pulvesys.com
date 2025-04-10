@@ -10,6 +10,10 @@ export class UsuariosService {
     return await this.prisma.usuario.findMany({ where: { empresa_id } });
   }
 
+  async countAllByEmpresaId(empresa_id: Usuario['id']) {
+    return await this.prisma.usuario.count({ where: { empresa_id } });
+  }
+
   async createUser(data: Partial<Usuario>) {
     return await this.prisma.usuario.create({ data: data as Usuario });
   }

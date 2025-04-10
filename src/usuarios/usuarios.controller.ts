@@ -69,6 +69,18 @@ export class UsuariosController {
       const { sub: empresa_id } = await this.jwtService.decode(
         authorization.substring(7),
       );
+
+      const usuariosQuantity =
+        await this.service.countAllByEmpresaId(empresa_id);
+
+      const MAX_EMPLOYERS_ALLOWED = +process.env.MAX_EMPLOYERS_ALLOWED;
+
+      // No deberia ser MAYOR O IGUAL ya que no deberia pasarse nunca pero de todas maneras se compara así por una futura excepción de cantidad de usuarios.
+      if (usuariosQuantity >= MAX_EMPLOYERS_ALLOWED)
+        throw new ConflictException(
+          'Alcanzaste el límite máximo de usuarios permitidos.',
+        );
+
       const { contrasena } = payload;
 
       const hashedPassword = await this.hashService.generateHash(contrasena);
