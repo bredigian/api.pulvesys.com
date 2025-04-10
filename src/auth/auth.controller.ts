@@ -252,7 +252,7 @@ export class AuthController {
       const canSignin = await this.sesionesService.verifySesionesByUserId(id);
       if (!canSignin)
         throw new ForbiddenException(
-          'Se alcanzó el limite de sesiones concurrentes. Puedes iniciar sesión en hasta 3 dispositivos al mismo tiempo.',
+          `Se alcanzó el limite de sesiones concurrentes. Puedes iniciar sesión en hasta ${process.env.MAX_CONCURRENT_SESIONES} dispositivos al mismo tiempo.`,
         );
 
       const { access_token, refresh_token } =

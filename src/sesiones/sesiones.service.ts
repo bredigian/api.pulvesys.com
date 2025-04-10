@@ -13,7 +13,7 @@ import { Tokens } from 'src/types/auth.types';
 
 @Injectable()
 export class SesionesService {
-  private MAX_CONCURRENT_SESIONES = 3;
+  private MAX_CONCURRENT_SESIONES = process.env.MAX_CONCURRENT_SESIONES;
 
   constructor(
     private prisma: PrismaService,
