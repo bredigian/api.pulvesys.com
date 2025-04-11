@@ -508,9 +508,12 @@ export class AuthController {
       const deletedSession =
         await this.sesionesService.deleteSessionByAccessToken(access_token);
 
-      response.clearCookie('access_token');
-      response.clearCookie('refresh_token');
-      response.clearCookie('userdata');
+      const ENVIRONMENT = process.env.NODE_ENV as TEnvironment;
+      const domain = Hostname[ENVIRONMENT];
+
+      response.clearCookie('access_token', { httpOnly: true, domain });
+      response.clearCookie('refresh_token', { domain });
+      response.clearCookie('userdata', { domain });
 
       return response.json(deletedSession);
     } catch (e) {
