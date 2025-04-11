@@ -1,5 +1,6 @@
 import { Log, Usuario } from '@prisma/client';
 
+import { DateTime } from 'luxon';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -7,9 +8,16 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class HistorialService {
   constructor(private prisma: PrismaService) {}
 
-  async getAll(usuario_id: Usuario['id']) {
+  async getAll(usuario_id: Usuario['id'], limitLastMonth: boolean) {
     return await this.prisma.log.findMany({
-      where: { usuario_id },
+      where: {
+        usuario_id,
+        createdAt: {
+          gte: limitLastMonth
+            ? DateTime.now().minus({ months: 1 }).toUTC().toJSDate()
+            : undefined,
+        },
+      },
       include: {
         usuario: {
           select: {
@@ -58,7 +66,7 @@ export class HistorialService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const dataByMySelf = await this.getAll(empresa_id);
+    const dataByMySelf = await this.getAll(empresa_id, false);
     const sortedData = [
       ...dataByEmployers,
       ...dataByDeletedEmployes,
