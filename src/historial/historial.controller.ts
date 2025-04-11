@@ -32,12 +32,15 @@ export class HistorialController {
       const { sub: usuario_id } = await this.jwtService.decode(
         authorization.substring(7),
       );
-      const { id, rol } = await this.usuariosService.findById(usuario_id);
+      const { id, rol, empresa_id } =
+        await this.usuariosService.findById(usuario_id);
+
+      const isIndividualPlan = rol === 'INDIVIDUAL' && !empresa_id;
 
       const data =
         rol === 'EMPRESA'
           ? await this.service.getAllByEmpresa(id)
-          : await this.service.getAll(id);
+          : await this.service.getAll(id, isIndividualPlan);
 
       return response.json(data);
     } catch (e) {
