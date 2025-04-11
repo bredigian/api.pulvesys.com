@@ -562,7 +562,7 @@ export class AuthController {
           .toJSDate(),
       });
 
-      const url = request.headers.referer;
+      const url = request.headers.origin;
 
       return await this.recoverTokenService.sendRecoverEmail(url, email, token);
     } catch (e) {
