@@ -42,7 +42,7 @@ export class RecoverTokenService {
       subject: 'Recuperar contraseña | PulveSys',
       html: `
             <div style="display: block; padding: 8px">
-                <p>Recuperá tu contraseña ingresando al siguiente link: ${url}auth/recuperar?token=${token}</p>
+                <p>Recuperá tu contraseña ingresando al siguiente link: ${url}/auth/recuperar?token=${token}</p>
             </div>
       `,
     };
